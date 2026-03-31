@@ -5,7 +5,6 @@
  */
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { motion } from "framer-motion";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -19,7 +18,7 @@ import {
 import AdminLayout from "../../components/layout/AdminLayout";
 import { Card, Button, Badge, Input, Skeleton } from "../../components/common";
 import { ANIMATION_VARIANTS } from "../../lib/constants";
-import { formatDate, formatMemberId, cn } from "../../lib/utils";
+import { cn } from "../../lib/utils";
 import { getAllMembers, deleteMember } from "../../services/memberService";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
@@ -29,6 +28,14 @@ import {
   isQuotaBlockedNow,
   getQuotaBlockedRemainingSeconds,
 } from "../../api/quotaGuard";
+
+// Numeric sort key for Mahal ID strings in "WARD/HOUSE" format (e.g. "2/117").
+// Ensures "2/9" < "2/20" < "3/1" instead of lexicographic ordering.
+const _MID_RE = /^(\d+)\/(\d+)$/;
+const parseMidSortKey = (mid) => {
+  const m = _MID_RE.exec(String(mid ?? ""));
+  return m ? parseInt(m[1], 10) * 100_000 + parseInt(m[2], 10) : Infinity;
+};
 
 const MembersPage = () => {
   const navigate = useNavigate();
@@ -126,7 +133,11 @@ const MembersPage = () => {
       };
 
       const response = await getAllMembers(params);
-      setMembers(response.data.members);
+      const raw = response.data.members ?? [];
+      const sorted = [...raw].sort(
+        (a, b) => parseMidSortKey(a.Mid) - parseMidSortKey(b.Mid),
+      );
+      setMembers(sorted);
       setPagination((prev) => ({
         ...prev,
         page: requestedPage,
@@ -170,6 +181,7 @@ const MembersPage = () => {
     }, 500); // Wait 500ms after user stops typing
 
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
   // Check for search parameter from URL on mount
@@ -185,6 +197,7 @@ const MembersPage = () => {
   useEffect(() => {
     // Keep results in sync when paging/filters change (works for both search and non-search)
     fetchCurrentPage();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     pagination.page,
     pagination.limit,
@@ -198,6 +211,7 @@ const MembersPage = () => {
     if (pagination.page !== 1) {
       setPagination((prev) => ({ ...prev, page: 1 }));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterWard, filterGender, filterRelation]);
 
   // Search filtering - now works on current page only
