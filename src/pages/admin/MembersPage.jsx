@@ -22,7 +22,7 @@ import { cn } from "../../lib/utils";
 import { getAllMembers, deleteMember } from "../../services/memberService";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
-import { AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import MemberDetailModal from "../../components/modals/MemberDetailModal";
 import {
   isQuotaBlockedNow,
