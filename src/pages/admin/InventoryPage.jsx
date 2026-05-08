@@ -3,7 +3,7 @@
  * Admin page for managing inventory items (Engineering Department)
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -25,6 +25,7 @@ import {
   FileUpload,
 } from "../../components/common";
 import { ANIMATION_VARIANTS, DEPARTMENT_TYPES } from "../../lib/constants";
+import { getErrorMessage } from "../../lib/utils";
 import inventoryService from "../../services/inventoryService";
 
 const InventoryPage = () => {
@@ -47,11 +48,7 @@ const InventoryPage = () => {
     warrantyUrl: "",
   });
 
-  useEffect(() => {
-    fetchItems();
-  }, [filterDepartment]);
-
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
@@ -60,12 +57,15 @@ const InventoryPage = () => {
       const response = await inventoryService.getAll(params);
       setItems(response.data || []);
     } catch (error) {
-      console.error("Error fetching inventory:", error);
-      toast.error("Failed to fetch inventory items");
+      toast.error(getErrorMessage(error, "Failed to fetch inventory items"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterDepartment]);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
 
   const handleOpenModal = (item = null) => {
     if (item) {
@@ -133,10 +133,7 @@ const InventoryPage = () => {
       handleCloseModal();
       fetchItems();
     } catch (error) {
-      console.error("Error saving inventory item:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to save inventory item",
-      );
+      toast.error(getErrorMessage(error, "Failed to save inventory item"));
     }
   };
 
@@ -148,8 +145,7 @@ const InventoryPage = () => {
       toast.success("Inventory item deleted successfully");
       fetchItems();
     } catch (error) {
-      console.error("Error deleting inventory item:", error);
-      toast.error("Failed to delete inventory item");
+      toast.error(getErrorMessage(error, "Failed to delete inventory item"));
     }
   };
 

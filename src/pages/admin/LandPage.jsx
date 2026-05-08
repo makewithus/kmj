@@ -3,9 +3,9 @@
  * Admin page for managing land records
  */
 
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
   Plus,
@@ -14,44 +14,50 @@ import {
   X,
   Search,
   Paperclip,
-} from 'lucide-react';
-import toast from 'react-hot-toast';
-import AdminLayout from '../../components/layout/AdminLayout';
-import { Card, Button, Input, Badge, FileUpload } from '../../components/common';
-import { ANIMATION_VARIANTS } from '../../lib/constants';
-import landService from '../../services/landService';
+} from "lucide-react";
+import toast from "react-hot-toast";
+import AdminLayout from "../../components/layout/AdminLayout";
+import {
+  Card,
+  Button,
+  Input,
+  Badge,
+  FileUpload,
+} from "../../components/common";
+import { ANIMATION_VARIANTS } from "../../lib/constants";
+import { getErrorMessage } from "../../lib/utils";
+import landService from "../../services/landService";
 
 const LandPage = () => {
   const [lands, setLands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingLand, setEditingLand] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [previewFile, setPreviewFile] = useState(null);
 
   const [formData, setFormData] = useState({
-    name: '',
-    area: '',
-    ward: '',
-    attachmentUrl: '',
+    name: "",
+    area: "",
+    ward: "",
+    attachmentUrl: "",
   });
 
-  useEffect(() => {
-    fetchLands();
-  }, []);
-
-  const fetchLands = async () => {
+  const fetchLands = useCallback(async () => {
     try {
       setLoading(true);
       const response = await landService.getAll();
       setLands(response.data || []);
     } catch (error) {
-      console.error('Error fetching land records:', error);
-      toast.error('Failed to fetch land records');
+      toast.error(getErrorMessage(error, "Failed to fetch land records"));
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchLands();
+  }, [fetchLands]);
 
   const handleOpenModal = (land = null) => {
     if (land) {
@@ -60,15 +66,15 @@ const LandPage = () => {
         name: land.name,
         area: land.area,
         ward: land.ward,
-        attachmentUrl: land.attachmentUrl || '',
+        attachmentUrl: land.attachmentUrl || "",
       });
     } else {
       setEditingLand(null);
       setFormData({
-        name: '',
-        area: '',
-        ward: '',
-        attachmentUrl: '',
+        name: "",
+        area: "",
+        ward: "",
+        attachmentUrl: "",
       });
     }
     setShowModal(true);
@@ -78,10 +84,10 @@ const LandPage = () => {
     setShowModal(false);
     setEditingLand(null);
     setFormData({
-      name: '',
-      area: '',
-      ward: '',
-      attachmentUrl: '',
+      name: "",
+      area: "",
+      ward: "",
+      attachmentUrl: "",
     });
   };
 
@@ -89,52 +95,52 @@ const LandPage = () => {
     e.preventDefault();
 
     if (!formData.name || !formData.area || !formData.ward) {
-      toast.error('Please fill all required fields');
+      toast.error("Please fill all required fields");
       return;
     }
 
     try {
       if (editingLand) {
         await landService.update(editingLand._id, formData);
-        toast.success('Land record updated successfully');
+        toast.success("Land record updated successfully");
       } else {
         await landService.create(formData);
-        toast.success('Land record created successfully');
+        toast.success("Land record created successfully");
       }
-      
+
       handleCloseModal();
       fetchLands();
     } catch (error) {
-      console.error('Error saving land record:', error);
-      toast.error(error.response?.data?.message || 'Failed to save land record');
+      toast.error(getErrorMessage(error, "Failed to save land record"));
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this land record?')) return;
+    if (!window.confirm("Are you sure you want to delete this land record?"))
+      return;
 
     try {
       await landService.delete(id);
-      toast.success('Land record deleted successfully');
+      toast.success("Land record deleted successfully");
       fetchLands();
     } catch (error) {
-      console.error('Error deleting land record:', error);
-      toast.error('Failed to delete land record');
+      toast.error(getErrorMessage(error, "Failed to delete land record"));
     }
   };
 
-  const filteredLands = lands.filter(land => {
-    const matchesSearch = land.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         land.area.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         land.ward.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredLands = lands.filter((land) => {
+    const matchesSearch =
+      land.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      land.area.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      land.ward.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -153,7 +159,8 @@ const LandPage = () => {
               Land Records Management
             </h1>
             <p className="text-gray-600 mt-2 text-sm">
-              Manage land ownership and property records • Total: {filteredLands.length} records
+              Manage land ownership and property records • Total:{" "}
+              {filteredLands.length} records
             </p>
           </div>
           <Button
@@ -245,7 +252,10 @@ const LandPage = () => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
                     {filteredLands.map((land) => (
-                      <tr key={land._id} className="hover:bg-[#E3F9F9]/30 transition-colors duration-200">
+                      <tr
+                        key={land._id}
+                        className="hover:bg-[#E3F9F9]/30 transition-colors duration-200"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-neutral-900">
                             {land.name}
@@ -269,7 +279,9 @@ const LandPage = () => {
                               View
                             </button>
                           ) : (
-                            <span className="text-neutral-400 text-sm">No file</span>
+                            <span className="text-neutral-400 text-sm">
+                              No file
+                            </span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-600">
@@ -281,13 +293,13 @@ const LandPage = () => {
                               onClick={() => handleOpenModal(land)}
                               className="text-primary-600 hover:text-primary-900"
                             >
-                                                      <Pencil className="h-4 w-4" />
+                              <Pencil className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(land._id)}
                               className="text-red-600 hover:text-red-900"
                             >
-                                                      <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
                         </td>
@@ -302,169 +314,210 @@ const LandPage = () => {
       </motion.div>
 
       {/* Add/Edit Modal - Rendered via Portal */}
-      {showModal && createPortal(
-        <AnimatePresence>
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={handleCloseModal}
-              style={{ zIndex: 9999 }}
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
-            />
-
-            {/* Modal */}
-            <div style={{ zIndex: 10000 }} className="fixed inset-0 flex items-center justify-center p-2 sm:p-4 pointer-events-none">
+      {showModal &&
+        createPortal(
+          <AnimatePresence>
+            <>
+              {/* Backdrop */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden pointer-events-auto flex flex-col"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={handleCloseModal}
+                style={{ zIndex: 9999 }}
+                className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+              />
+
+              {/* Modal */}
+              <div
+                style={{ zIndex: 10000 }}
+                className="fixed inset-0 flex items-center justify-center p-2 sm:p-4 pointer-events-none"
               >
-              <div className="p-4 sm:p-6 border-b border-neutral-200 flex items-center justify-between sticky top-0 bg-white z-10">
-                <h2 className="text-lg sm:text-xl font-bold text-neutral-900">
-                  {editingLand ? 'Edit Land Record' : 'Add New Land Record'}
-                </h2>
-                <button
-                  onClick={handleCloseModal}
-                  className="text-neutral-400 hover:text-neutral-600 p-1"
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden pointer-events-auto flex flex-col"
                 >
-                  <X className="h-5 w-5 sm:h-6 sm:w-6" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto flex-1">
-                <div className="space-y-4">
-                  <Input
-                    label="Name"
-                    name="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    required
-                    placeholder="Enter name"
-                  />
-
-                  <Input
-                    label="Area/Place"
-                    name="area"
-                    value={formData.area}
-                    onChange={(e) => setFormData(prev => ({ ...prev, area: e.target.value }))}
-                    required
-                    placeholder="Enter area or place"
-                  />
-
-                  <Input
-                    label="Ward/Building No"
-                    name="ward"
-                    value={formData.ward}
-                    onChange={(e) => setFormData(prev => ({ ...prev, ward: e.target.value }))}
-                    required
-                    placeholder="Enter ward or building number"
-                  />
-
-                  <FileUpload
-                    label="Attachment (optional)"
-                    currentUrl={formData.attachmentUrl}
-                    onUploadComplete={(url) => setFormData(prev => ({ ...prev, attachmentUrl: url }))}
-                    accept="image/*,.pdf"
-                    maxSize={5}
-                    helperText="Upload images (JPG, PNG) or PDF files up to 5MB"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-3 mt-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCloseModal}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" variant="primary">
-                    {editingLand ? 'Update' : 'Create'} Record
-                  </Button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-          </>
-        </AnimatePresence>,
-        document.body
-      )}
-
-      {/* File Preview Modal */}
-      {previewFile && createPortal(
-        <AnimatePresence>
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setPreviewFile(null)}
-              style={{ zIndex: 9999 }}
-              className="fixed inset-0 bg-black/90 backdrop-blur-sm"
-            />
-
-            {/* Preview Modal */}
-            <div style={{ zIndex: 10000 }} className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden pointer-events-auto flex flex-col"
-              >
-                <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-neutral-900">File Preview</h3>
-                  <div className="flex items-center gap-2">
-                    <a
-                      href={previewFile}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3 py-1.5 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                    >
-                      Open in New Tab
-                    </a>
+                  <div className="p-4 sm:p-6 border-b border-neutral-200 flex items-center justify-between sticky top-0 bg-white z-10">
+                    <h2 className="text-lg sm:text-xl font-bold text-neutral-900">
+                      {editingLand ? "Edit Land Record" : "Add New Land Record"}
+                    </h2>
                     <button
-                      onClick={() => setPreviewFile(null)}
+                      onClick={handleCloseModal}
                       className="text-neutral-400 hover:text-neutral-600 p-1"
                     >
-                      <X className="h-6 w-6" />
+                      <X className="h-5 w-5 sm:h-6 sm:w-6" />
                     </button>
                   </div>
-                </div>
 
-                <div className="flex-1 overflow-auto bg-neutral-50 p-4">
-                  {previewFile.toLowerCase().endsWith('.pdf') ? (
-                    <div className="w-full h-full min-h-[600px] flex flex-col items-center justify-center gap-4">
-                      <iframe
-                        src={`${previewFile}#toolbar=0`}
-                        className="w-full h-full rounded-lg border-0"
-                        title="PDF Preview"
-                        style={{ minHeight: '600px' }}
+                  <form
+                    onSubmit={handleSubmit}
+                    className="p-4 sm:p-6 overflow-y-auto flex-1"
+                  >
+                    <div className="space-y-4">
+                      <Input
+                        label="Name"
+                        name="name"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
+                        required
+                        placeholder="Enter name"
                       />
-                      <p className="text-sm text-neutral-600">
-                        Can't see the preview? <a href={previewFile} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline">Open in new tab</a>
-                      </p>
+
+                      <Input
+                        label="Area/Place"
+                        name="area"
+                        value={formData.area}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            area: e.target.value,
+                          }))
+                        }
+                        required
+                        placeholder="Enter area or place"
+                      />
+
+                      <Input
+                        label="Ward/Building No"
+                        name="ward"
+                        value={formData.ward}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            ward: e.target.value,
+                          }))
+                        }
+                        required
+                        placeholder="Enter ward or building number"
+                      />
+
+                      <FileUpload
+                        label="Attachment (optional)"
+                        currentUrl={formData.attachmentUrl}
+                        onUploadComplete={(url) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            attachmentUrl: url,
+                          }))
+                        }
+                        accept="image/*,.pdf"
+                        maxSize={5}
+                        helperText="Upload images (JPG, PNG) or PDF files up to 5MB"
+                      />
                     </div>
-                  ) : (
-                    <img
-                      src={previewFile}
-                      alt="File preview"
-                      className="max-w-full max-h-full mx-auto rounded-lg shadow-lg"
-                    />
-                  )}
-                </div>
-              </motion.div>
-            </div>
-          </>
-        </AnimatePresence>,
-        document.body
-      )}
+
+                    <div className="flex justify-end gap-3 mt-6">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCloseModal}
+                      >
+                        Cancel
+                      </Button>
+                      <Button type="submit" variant="primary">
+                        {editingLand ? "Update" : "Create"} Record
+                      </Button>
+                    </div>
+                  </form>
+                </motion.div>
+              </div>
+            </>
+          </AnimatePresence>,
+          document.body,
+        )}
+
+      {/* File Preview Modal */}
+      {previewFile &&
+        createPortal(
+          <AnimatePresence>
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setPreviewFile(null)}
+                style={{ zIndex: 9999 }}
+                className="fixed inset-0 bg-black/90 backdrop-blur-sm"
+              />
+
+              {/* Preview Modal */}
+              <div
+                style={{ zIndex: 10000 }}
+                className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none"
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden pointer-events-auto flex flex-col"
+                >
+                  <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-neutral-900">
+                      File Preview
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={previewFile}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1.5 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                      >
+                        Open in New Tab
+                      </a>
+                      <button
+                        onClick={() => setPreviewFile(null)}
+                        className="text-neutral-400 hover:text-neutral-600 p-1"
+                      >
+                        <X className="h-6 w-6" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-auto bg-neutral-50 p-4">
+                    {previewFile.toLowerCase().endsWith(".pdf") ? (
+                      <div className="w-full h-full min-h-[600px] flex flex-col items-center justify-center gap-4">
+                        <iframe
+                          src={`${previewFile}#toolbar=0`}
+                          className="w-full h-full rounded-lg border-0"
+                          title="PDF Preview"
+                          style={{ minHeight: "600px" }}
+                        />
+                        <p className="text-sm text-neutral-600">
+                          Can't see the preview?{" "}
+                          <a
+                            href={previewFile}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary-600 hover:underline"
+                          >
+                            Open in new tab
+                          </a>
+                        </p>
+                      </div>
+                    ) : (
+                      <img
+                        src={previewFile}
+                        alt="File preview"
+                        className="max-w-full max-h-full mx-auto rounded-lg shadow-lg"
+                      />
+                    )}
+                  </div>
+                </motion.div>
+              </div>
+            </>
+          </AnimatePresence>,
+          document.body,
+        )}
     </AdminLayout>
   );
 };

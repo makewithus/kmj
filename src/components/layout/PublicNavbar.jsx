@@ -2,11 +2,11 @@
  * Public Navbar - Modern Glassmorphism Design
  */
 
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
-import logo from '../../assets/Images/logos.png';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import logo from "../../assets/Images/logos.png";
 
 const PublicNavbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -17,16 +17,16 @@ const PublicNavbar = () => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const navLinks = [
-    { name: 'Home', href: '/' },
-    { name: 'About', href: '/about' },
-    { name: 'Services', href: '/services' },
-    { name: 'Events', href: '/events' },
-    { name: 'Contact', href: '/contact' },
+    { name: "Home", href: "/" },
+    { name: "About", href: "/about" },
+    { name: "Services", href: "/services" },
+    { name: "Events", href: "/events" },
+    { name: "Contact", href: "/contact" },
   ];
 
   return (
@@ -36,9 +36,7 @@ const PublicNavbar = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
         className={`fixed top-0 left-0 right-0 z-50 h-18 transition-all duration-300 ${
-          scrolled
-            ? 'bg-white shadow-lg'
-            : 'bg-white/90 backdrop-blur-sm'
+          scrolled ? "bg-white shadow-lg" : "bg-white/90 backdrop-blur-sm"
         }`}
       >
         <div className="max-w-340 mx-auto px-4 ">
@@ -74,6 +72,16 @@ const PublicNavbar = () => {
 
             {/* CTA Buttons */}
             <div className="hidden lg:flex items-center gap-3">
+              <Link to="/user-portal/login">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ duration: 0.2 }}
+                  className="px-6 py-2.5 rounded-lg border-2 border-[#31757A] text-[#31757A] font-semibold hover:bg-[#E3F9F9] transition-all duration-200"
+                >
+                  User Portal
+                </motion.button>
+              </Link>
               <Link to="/login">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
@@ -115,7 +123,7 @@ const PublicNavbar = () => {
           {mobileMenuOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
+              animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.2, ease: "easeInOut" }}
               className="lg:hidden overflow-hidden bg-white border-t border-gray-100"
@@ -132,6 +140,15 @@ const PublicNavbar = () => {
                   </Link>
                 ))}
                 <div className="pt-4 space-y-3 border-t border-gray-100">
+                  <Link
+                    to="/user-portal/login"
+                    className="block"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <button className="w-full px-6 py-2.5 rounded-lg border-2 border-[#31757A] text-[#31757A] font-semibold hover:bg-[#E3F9F9] transition-all duration-200">
+                      User Portal
+                    </button>
+                  </Link>
                   <Link to="/login" className="block">
                     <button className="w-full px-6 py-2.5 rounded-lg border-2 border-[#31757A] text-[#31757A] font-semibold hover:bg-[#E3F9F9] transition-all duration-200">
                       Login

@@ -4,37 +4,42 @@
  * Based on old Bill.php with modern UI
  */
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   MagnifyingGlassIcon,
   CreditCardIcon,
   PrinterIcon,
   ClockIcon,
   CheckCircleIcon,
-} from '@heroicons/react/24/outline';
-import AdminLayout from '../../components/layout/AdminLayout';
-import { Card, Button, Input, Badge } from '../../components/common';
-import { ANIMATION_VARIANTS } from '../../lib/constants';
-import { formatCurrency, formatDate } from '../../lib/utils';
-import { searchMembers } from '../../services/memberService';
-import { createBill, getMemberBills, ACCOUNT_TYPES, numberToWords } from '../../services/billService';
-import { toast } from 'react-hot-toast';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+} from "@heroicons/react/24/outline";
+import AdminLayout from "../../components/layout/AdminLayout";
+import { Card, Button, Input, Badge } from "../../components/common";
+import { ANIMATION_VARIANTS } from "../../lib/constants";
+import { formatCurrency, formatDate, getErrorMessage } from "../../lib/utils";
+import { searchMembers } from "../../services/memberService";
+import {
+  createBill,
+  getMemberBills,
+  ACCOUNT_TYPES,
+  numberToWords,
+} from "../../services/billService";
+import { toast } from "react-hot-toast";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const QuickPayPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [selectedMember, setSelectedMember] = useState(null);
   const [recentBills, setRecentBills] = useState([]);
   const [loading, setLoading] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
-    amount: '',
-    accountType: '',
-    paymentMethod: 'Cash',
-    notes: '',
+    amount: "",
+    accountType: "",
+    paymentMethod: "Cash",
+    notes: "",
   });
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [showReceipt, setShowReceipt] = useState(false);
@@ -50,7 +55,7 @@ const QuickPayPage = () => {
 
   // Check for member parameter from URL on mount and auto-select
   useEffect(() => {
-    const memberNameFromUrl = searchParams.get('member');
+    const memberNameFromUrl = searchParams.get("member");
     if (memberNameFromUrl) {
       // Automatically search for the member by name
       setSearchQuery(memberNameFromUrl);
@@ -68,11 +73,10 @@ const QuickPayPage = () => {
         handleSelectMember(member);
         toast.success(`Member ${member.Fname} selected`);
       } else {
-        toast.error('Member not found');
+        toast.error("Member not found");
       }
     } catch (error) {
-      console.error('Error searching member:', error);
-      toast.error('Search failed');
+      toast.error(getErrorMessage(error, "Search failed"));
     }
   };
 
@@ -84,11 +88,10 @@ const QuickPayPage = () => {
       const response = await searchMembers(searchQuery);
       setSearchResults(response.data);
       if (response.data.length === 0) {
-        toast.error('No members found');
+        toast.error("No members found");
       }
     } catch (error) {
-      console.error('Error searching members:', error);
-      toast.error('Search failed');
+      toast.error(getErrorMessage(error, "Search failed"));
     }
   };
 
@@ -96,14 +99,14 @@ const QuickPayPage = () => {
   const handleSelectMember = async (member) => {
     setSelectedMember(member);
     setSearchResults([]);
-    setSearchQuery('');
+    setSearchQuery("");
 
     // Fetch recent bills
     try {
       const response = await getMemberBills(member.Mid, { limit: 5 });
       setRecentBills(response.data.bills || []);
-    } catch (error) {
-      console.error('Error fetching bills:', error);
+    } catch {
+      // recent bills are non-critical
     }
   };
 
@@ -118,12 +121,12 @@ const QuickPayPage = () => {
     e.preventDefault();
 
     if (!selectedMember) {
-      toast.error('Please select a member');
+      toast.error("Please select a member");
       return;
     }
 
     if (!paymentForm.amount || !paymentForm.accountType) {
-      toast.error('Please fill in all required fields');
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -137,24 +140,25 @@ const QuickPayPage = () => {
         notes: paymentForm.notes,
       });
 
-      toast.success('Payment recorded successfully!');
+      toast.success("Payment recorded successfully!");
       setLastBillId(response.data._id);
       setShowReceipt(true);
 
       // Reset form
       setPaymentForm({
-        amount: '',
-        accountType: '',
-        paymentMethod: 'Cash',
-        notes: '',
+        amount: "",
+        accountType: "",
+        paymentMethod: "Cash",
+        notes: "",
       });
 
       // Refresh recent bills
-      const billsResponse = await getMemberBills(selectedMember.Mid, { limit: 5 });
+      const billsResponse = await getMemberBills(selectedMember.Mid, {
+        limit: 5,
+      });
       setRecentBills(billsResponse.data.bills || []);
     } catch (error) {
-      console.error('Error creating bill:', error);
-      toast.error(error.response?.data?.message || 'Payment failed');
+      toast.error(getErrorMessage(error, "Payment failed"));
     } finally {
       setLoading(false);
     }
@@ -163,7 +167,11 @@ const QuickPayPage = () => {
   // Print receipt
   const handlePrint = () => {
     if (lastBillId) {
-      window.open(`/admin/receipt/${lastBillId}`, '_blank', 'width=800,height=600');
+      window.open(
+        `/admin/receipt/${lastBillId}`,
+        "_blank",
+        "width=800,height=600",
+      );
     }
   };
 
@@ -177,18 +185,16 @@ const QuickPayPage = () => {
         className="mb-6"
       >
         <h1 className="text-3xl font-bold text-neutral-900">Quick Pay</h1>
-        <p className="text-neutral-600 mt-1">
-          Fast payment entry system
-        </p>
+        <p className="text-neutral-600 mt-1">Fast payment entry system</p>
         <div className="mt-2 text-sm text-primary-600 font-medium">
-          {currentDateTime.toLocaleString('en-IN', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
+          {currentDateTime.toLocaleString("en-IN", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
           })}
         </div>
       </motion.div>
@@ -215,7 +221,7 @@ const QuickPayPage = () => {
                     placeholder="Enter Mahal ID or search..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                     leftIcon={<MagnifyingGlassIcon className="h-5 w-5" />}
                   />
                   <Button variant="primary" onClick={handleSearch}>
@@ -234,7 +240,9 @@ const QuickPayPage = () => {
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-neutral-900">{member.Fname}</p>
+                            <p className="font-medium text-neutral-900">
+                              {member.Fname}
+                            </p>
                             <p className="text-sm text-neutral-600">
                               ID: {member.Mid} | Aadhaar: {member.Aadhaar}
                             </p>
@@ -249,15 +257,21 @@ const QuickPayPage = () => {
                 {/* Selected Member */}
                 {selectedMember && (
                   <div className="mt-4 p-4 bg-linear-to-r from-primary-50 to-cyan-50 border border-primary-200 rounded-lg">
-                    <h3 className="font-semibold text-neutral-900 mb-2">Selected Member</h3>
+                    <h3 className="font-semibold text-neutral-900 mb-2">
+                      Selected Member
+                    </h3>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
                         <span className="text-neutral-600">Mahal ID:</span>
-                        <span className="ml-2 font-medium text-primary-600">{selectedMember.Mid}</span>
+                        <span className="ml-2 font-medium text-primary-600">
+                          {selectedMember.Mid}
+                        </span>
                       </div>
                       <div>
                         <span className="text-neutral-600">Name:</span>
-                        <span className="ml-2 font-medium">{selectedMember.Fname}</span>
+                        <span className="ml-2 font-medium">
+                          {selectedMember.Fname}
+                        </span>
                       </div>
                       <div className="col-span-2">
                         <span className="text-neutral-600">Address:</span>
@@ -295,8 +309,8 @@ const QuickPayPage = () => {
                               key={type.value}
                               className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
                                 paymentForm.accountType === type.value
-                                  ? 'border-primary-500 bg-primary-50'
-                                  : 'border-neutral-200 hover:border-primary-300'
+                                  ? "border-primary-500 bg-primary-50"
+                                  : "border-neutral-200 hover:border-primary-300"
                               }`}
                             >
                               <input
@@ -406,8 +420,12 @@ const QuickPayPage = () => {
                   <div className="flex items-center gap-3 mb-4">
                     <CheckCircleIcon className="h-8 w-8 text-green-600" />
                     <div>
-                      <h3 className="font-semibold text-green-900">Payment Successful!</h3>
-                      <p className="text-sm text-green-700">Amount has been credited</p>
+                      <h3 className="font-semibold text-green-900">
+                        Payment Successful!
+                      </h3>
+                      <p className="text-sm text-green-700">
+                        Amount has been credited
+                      </p>
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -444,9 +462,7 @@ const QuickPayPage = () => {
               <Card>
                 <Card.Header>
                   <Card.Title>Recent Bills</Card.Title>
-                  <Card.Description>
-                    Last 5 transactions
-                  </Card.Description>
+                  <Card.Description>Last 5 transactions</Card.Description>
                 </Card.Header>
                 <Card.Content className="p-0">
                   <div className="space-y-2 p-4">
@@ -477,7 +493,9 @@ const QuickPayPage = () => {
                     variant="ghost"
                     size="sm"
                     fullWidth
-                    onClick={() => navigate(`/admin/bills?mahalId=${selectedMember.Mid}`)}
+                    onClick={() =>
+                      navigate(`/admin/bills?mahalId=${selectedMember.Mid}`)
+                    }
                   >
                     View All Bills
                   </Button>
@@ -502,7 +520,7 @@ const QuickPayPage = () => {
                     variant="outline"
                     leftIcon={<ClockIcon className="h-5 w-5" />}
                     fullWidth
-                    onClick={() => navigate('/admin/bills')}
+                    onClick={() => navigate("/admin/bills")}
                   >
                     View All Bills
                   </Button>
@@ -510,7 +528,7 @@ const QuickPayPage = () => {
                     variant="outline"
                     leftIcon={<CreditCardIcon className="h-5 w-5" />}
                     fullWidth
-                    onClick={() => navigate('/admin/members')}
+                    onClick={() => navigate("/admin/members")}
                   >
                     View Members
                   </Button>

@@ -3,25 +3,30 @@
  * Aceternity-inspired minimal authentication
  */
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
-import { motion } from 'framer-motion';
+// eslint-disable-next-line no-unused-vars
+import { motion } from "framer-motion";
 
-import { LockClosedIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import AuthLayout from '../../components/layout/AuthLayout';
-import showToast from '../../components/common/Toast';
-import useAuthStore from '../../store/authStore';
+import {
+  LockClosedIcon,
+  EyeIcon,
+  EyeSlashIcon,
+} from "@heroicons/react/24/outline";
+import AuthLayout from "../../components/layout/AuthLayout";
+import showToast from "../../components/common/Toast";
+import useAuthStore from "../../store/authStore";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login, isLoading } = useAuthStore();
-  
+
   const [formData, setFormData] = useState({
-    memberId: '',
-    password: '',
+    memberId: "",
+    password: "",
   });
-  
+
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
@@ -32,7 +37,7 @@ const LoginPage = () => {
       [name]: value,
     }));
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -40,11 +45,11 @@ const LoginPage = () => {
     const newErrors = {};
 
     if (!formData.memberId.trim()) {
-      newErrors.memberId = 'Member ID is required';
+      newErrors.memberId = "Member ID is required";
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     }
 
     setErrors(newErrors);
@@ -64,21 +69,21 @@ const LoginPage = () => {
     });
 
     if (result.success) {
-      showToast.success('Login successful!');
-      if (result.user?.role === 'admin') {
-        navigate('/admin/dashboard');
+      showToast.success("Login successful!");
+      if (result.user?.role === "admin") {
+        navigate("/admin/dashboard");
       } else {
-        navigate('/user/dashboard');
+        navigate("/user/dashboard");
       }
     } else {
-      showToast.error(result.error || 'Login failed. Please try again.');
+      showToast.error(result.error || "Login failed. Please try again.");
     }
   };
 
   return (
     <AuthLayout>
-      <motion.form 
-        onSubmit={handleSubmit} 
+      <motion.form
+        onSubmit={handleSubmit}
         className="space-y-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -119,7 +124,7 @@ const LoginPage = () => {
           </label>
           <div className="relative group">
             <input
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleChange}
@@ -173,14 +178,26 @@ const LoginPage = () => {
           <div className="absolute inset-0 bg-linear-to-r from-[#31757A] via-[#41A4A7] to-[#31757A] transition-all duration-300"></div>
           <div className="absolute inset-0 bg-linear-to-r from-[#41A4A7] via-[#31757A] to-[#41A4A7] opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.3),transparent_50%)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          
+
           {/* Button Content */}
           <span className="relative z-10 flex items-center justify-center gap-2">
             {isLoading ? (
               <>
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
                 <span>Signing in...</span>
               </>
@@ -211,8 +228,8 @@ const LoginPage = () => {
           whileTap={{ scale: 0.98 }}
           transition={{ duration: 0.2 }}
         >
-          <Link 
-            to="/register" 
+          <Link
+            to="/register"
             className="block w-full py-4 rounded-xl font-bold text-[#31757A] border-2 border-[#31757A] hover:bg-[#E3F9F9] hover:border-[#41A4A7] transition-all duration-200 shadow-sm hover:shadow-lg text-center"
           >
             Create Account

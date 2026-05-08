@@ -4,16 +4,21 @@
  * Based on old membership.php with modern UI
  */
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeftIcon, CheckIcon } from '@heroicons/react/24/outline';
-import AdminLayout from '../../components/layout/AdminLayout';
-import { Card, Button, Input } from '../../components/common';
-import { ANIMATION_VARIANTS } from '../../lib/constants';
-import { createMember, updateMember, getMemberById } from '../../services/memberService';
-import { toast } from 'react-hot-toast';
-import useAuthStore from '../../store/authStore';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeftIcon, CheckIcon } from "@heroicons/react/24/outline";
+import AdminLayout from "../../components/layout/AdminLayout";
+import { Card, Button, Input } from "../../components/common";
+import { ANIMATION_VARIANTS } from "../../lib/constants";
+import { getErrorMessage } from "../../lib/utils";
+import {
+  createMember,
+  updateMember,
+  getMemberById,
+} from "../../services/memberService";
+import { toast } from "react-hot-toast";
+import useAuthStore from "../../store/authStore";
 
 const MemberFormPage = () => {
   const { id } = useParams();
@@ -24,33 +29,33 @@ const MemberFormPage = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     // Personal Details
-    Mid: user?.memberId || '',
-    Fname: '',
-    Dob: '',
-    Gender: 'Male',
-    Relation: '',
-    Mstatus: 'Single',
-    Occupation: 'Student',
-    Designation: '',
-    RC: 'White',
-    Education: '',
-    Madrassa: '',
-    Aadhaar: '',
-    Mobile: '',
-    Email: '',
-    Health: 'Not Required',
-    Myear: '',
-    
+    Mid: user?.memberId || "",
+    Fname: "",
+    Dob: "",
+    Gender: "Male",
+    Relation: "",
+    Mstatus: "Single",
+    Occupation: "Student",
+    Designation: "",
+    RC: "White",
+    Education: "",
+    Madrassa: "",
+    Aadhaar: "",
+    Mobile: "",
+    Email: "",
+    Health: "Not Required",
+    Myear: "",
+
     // Residence Details
-    Pward: '',
-    Phouse: '',
-    Dist: '',
-    Area: 'Panchayath',
-    Land: 'Yes',
-    House: 'Yes',
-    Resident: 'Own',
-    Address: user?.address || '',
-    Mward: user?.ward || '',
+    Pward: "",
+    Phouse: "",
+    Dist: "",
+    Area: "Panchayath",
+    Land: "Yes",
+    House: "Yes",
+    Resident: "Own",
+    Address: user?.address || "",
+    Mward: user?.ward || "",
   });
 
   // Fetch member data if editing
@@ -66,9 +71,8 @@ const MemberFormPage = () => {
       const response = await getMemberById(id);
       setFormData(response.data);
     } catch (error) {
-      console.error('Error fetching member:', error);
-      toast.error('Failed to load member data');
-      navigate('/admin/members');
+      toast.error(getErrorMessage(error, "Failed to load member data"));
+      navigate("/admin/members");
     } finally {
       setLoading(false);
     }
@@ -81,10 +85,10 @@ const MemberFormPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Basic validation
     if (!formData.Fname || !formData.Dob || !formData.Aadhaar) {
-      toast.error('Please fill in all required fields');
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -92,15 +96,14 @@ const MemberFormPage = () => {
       setLoading(true);
       if (isEdit) {
         await updateMember(id, formData);
-        toast.success('Member updated successfully');
+        toast.success("Member updated successfully");
       } else {
         await createMember(formData);
-        toast.success('Member added successfully');
+        toast.success("Member added successfully");
       }
-      navigate('/admin/members');
+      navigate("/admin/members");
     } catch (error) {
-      console.error('Error saving member:', error);
-      toast.error(error.response?.data?.message || 'Failed to save member');
+      toast.error(getErrorMessage(error, "Failed to save member"));
     } finally {
       setLoading(false);
     }
@@ -120,16 +123,16 @@ const MemberFormPage = () => {
             variant="ghost"
             size="sm"
             leftIcon={<ArrowLeftIcon className="h-4 w-4" />}
-            onClick={() => navigate('/admin/members')}
+            onClick={() => navigate("/admin/members")}
           >
             Back
           </Button>
         </div>
         <h1 className="text-3xl font-bold text-neutral-900">
-          {isEdit ? 'Edit Member' : 'Add New Member'}
+          {isEdit ? "Edit Member" : "Add New Member"}
         </h1>
         <p className="text-neutral-600 mt-1">
-          {isEdit ? 'Update member information' : 'Register new census entry'}
+          {isEdit ? "Update member information" : "Register new census entry"}
         </p>
       </motion.div>
 
@@ -145,11 +148,19 @@ const MemberFormPage = () => {
             <Card.Content className="py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h5 className="font-semibold text-neutral-900">Family Information</h5>
+                  <h5 className="font-semibold text-neutral-900">
+                    Family Information
+                  </h5>
                   <p className="text-sm text-neutral-600 mt-1">
-                    Mahal ID: <span className="font-medium text-primary-600">{user?.memberId}</span> | 
-                    Name: <span className="font-medium">{user?.name}</span> | 
-                    Ward/House: <span className="font-medium">{user?.ward}/{user?.houseNo}</span>
+                    Mahal ID:{" "}
+                    <span className="font-medium text-primary-600">
+                      {user?.memberId}
+                    </span>{" "}
+                    | Name: <span className="font-medium">{user?.name}</span> |
+                    Ward/House:{" "}
+                    <span className="font-medium">
+                      {user?.ward}/{user?.houseNo}
+                    </span>
                   </p>
                 </div>
               </div>
@@ -203,7 +214,7 @@ const MemberFormPage = () => {
                         type="radio"
                         name="Gender"
                         value="Male"
-                        checked={formData.Gender === 'Male'}
+                        checked={formData.Gender === "Male"}
                         onChange={handleChange}
                         className="mr-2"
                       />
@@ -214,7 +225,7 @@ const MemberFormPage = () => {
                         type="radio"
                         name="Gender"
                         value="Female"
-                        checked={formData.Gender === 'Female'}
+                        checked={formData.Gender === "Female"}
                         onChange={handleChange}
                         className="mr-2"
                       />
@@ -225,7 +236,7 @@ const MemberFormPage = () => {
                         type="radio"
                         name="Gender"
                         value="Other"
-                        checked={formData.Gender === 'Other'}
+                        checked={formData.Gender === "Other"}
                         onChange={handleChange}
                         className="mr-2"
                       />
@@ -281,8 +292,12 @@ const MemberFormPage = () => {
                     <option value="Self Employee">Self Employee</option>
                     <option value="House Wife">House Wife</option>
                     <option value="Business">Business</option>
-                    <option value="Masjid Emam / Madrassa Teacher">Masjid Emam / Madrassa Teacher</option>
-                    <option value="PVT/Govt Pensioner">PVT/Govt Pensioner</option>
+                    <option value="Masjid Emam / Madrassa Teacher">
+                      Masjid Emam / Madrassa Teacher
+                    </option>
+                    <option value="PVT/Govt Pensioner">
+                      PVT/Govt Pensioner
+                    </option>
                     <option value="Other">Other</option>
                     <option value="Nill">Nill</option>
                   </select>
@@ -378,12 +393,18 @@ const MemberFormPage = () => {
                   >
                     <option value="">Select Health Status</option>
                     <option value="Not Required">Not Required</option>
-                    <option value="Accident - Very Serious">Accident - Very Serious</option>
+                    <option value="Accident - Very Serious">
+                      Accident - Very Serious
+                    </option>
                     <option value="Cancer">Cancer</option>
                     <option value="Heart Treatment">Heart Treatment</option>
                     <option value="Kidney Disease">Kidney Disease</option>
-                    <option value="Brain and Nervous System">Brain and Nervous System</option>
-                    <option value="Others - Very Serious">Others - Very Serious</option>
+                    <option value="Brain and Nervous System">
+                      Brain and Nervous System
+                    </option>
+                    <option value="Others - Very Serious">
+                      Others - Very Serious
+                    </option>
                   </select>
                 </div>
 
@@ -448,7 +469,7 @@ const MemberFormPage = () => {
                         type="radio"
                         name="Area"
                         value="Corporation"
-                        checked={formData.Area === 'Corporation'}
+                        checked={formData.Area === "Corporation"}
                         onChange={handleChange}
                         className="mr-2"
                       />
@@ -459,7 +480,7 @@ const MemberFormPage = () => {
                         type="radio"
                         name="Area"
                         value="Municipality"
-                        checked={formData.Area === 'Municipality'}
+                        checked={formData.Area === "Municipality"}
                         onChange={handleChange}
                         className="mr-2"
                       />
@@ -470,7 +491,7 @@ const MemberFormPage = () => {
                         type="radio"
                         name="Area"
                         value="Panchayath"
-                        checked={formData.Area === 'Panchayath'}
+                        checked={formData.Area === "Panchayath"}
                         onChange={handleChange}
                         className="mr-2"
                       />
@@ -553,7 +574,7 @@ const MemberFormPage = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate('/admin/members')}
+                onClick={() => navigate("/admin/members")}
                 disabled={loading}
               >
                 Cancel
@@ -564,7 +585,7 @@ const MemberFormPage = () => {
                 loading={loading}
                 leftIcon={<CheckIcon className="h-5 w-5" />}
               >
-                {isEdit ? 'Update Member' : 'Add Member'}
+                {isEdit ? "Update Member" : "Add Member"}
               </Button>
             </Card.Footer>
           </Card>

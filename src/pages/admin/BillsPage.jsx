@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  MagnifyingGlassIcon, 
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  MagnifyingGlassIcon,
   FunnelIcon,
   DocumentTextIcon,
   PrinterIcon,
@@ -11,15 +11,19 @@ import {
   CreditCardIcon,
   BanknotesIcon,
   PlusIcon,
-  ChartBarIcon
-} from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
-import { getAllBills, getBillStats, ACCOUNT_TYPES } from '../../services/billService';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import AdminLayout from '../../components/layout/AdminLayout';
-import { Card, Button, Badge } from '../../components/common';
-import { ANIMATION_VARIANTS } from '../../lib/constants';
-import { cn } from '../../lib/utils';
+  ChartBarIcon,
+} from "@heroicons/react/24/outline";
+import toast from "react-hot-toast";
+import {
+  getAllBills,
+  getBillStats,
+  ACCOUNT_TYPES,
+} from "../../services/billService";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import AdminLayout from "../../components/layout/AdminLayout";
+import { Card, Button, Badge } from "../../components/common";
+import { ANIMATION_VARIANTS } from "../../lib/constants";
+import { cn, getErrorMessage } from "../../lib/utils";
 
 const BillsPage = () => {
   const navigate = useNavigate();
@@ -29,20 +33,20 @@ const BillsPage = () => {
     totalBills: 0,
     totalAmount: 0,
     todayAmount: 0,
-    monthAmount: 0
+    monthAmount: 0,
   });
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Search and filters
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
-    accountType: '',
-    paymentMethod: '',
-    startDate: '',
-    endDate: '',
-    minAmount: '',
-    maxAmount: ''
+    accountType: "",
+    paymentMethod: "",
+    startDate: "",
+    endDate: "",
+    minAmount: "",
+    maxAmount: "",
   });
 
   // Pagination
@@ -52,20 +56,20 @@ const BillsPage = () => {
     totalBills: 0,
     limit: 20,
     hasNextPage: false,
-    hasPrevPage: false
+    hasPrevPage: false,
   });
 
   // Cursor-based pagination (maps page -> cursor used to fetch that page)
-  const [pageCursors, setPageCursors] = useState({ 1: '' });
+  const [pageCursors, setPageCursors] = useState({ 1: "" });
 
-  const paymentMethods = ['Cash', 'UPI', 'Card', 'Bank Transfer', 'Cheque'];
+  const paymentMethods = ["Cash", "UPI", "Card", "Bank Transfer", "Cheque"];
 
   // Check for search parameter from URL on mount
   useEffect(() => {
-    const searchFromUrl = searchParams.get('search');
+    const searchFromUrl = searchParams.get("search");
     if (searchFromUrl) {
       setSearchQuery(searchFromUrl);
-      setFilters(prev => ({ ...prev, mahalId: searchFromUrl }));
+      setFilters((prev) => ({ ...prev, mahalId: searchFromUrl }));
     }
   }, [searchParams]);
 
@@ -73,26 +77,26 @@ const BillsPage = () => {
   useEffect(() => {
     fetchBills();
     fetchStats();
-  }, [pagination.currentPage, filters]);
+  }, [fetchBills, fetchStats]);
 
-  const fetchBills = async () => {
+  const fetchBills = useCallback(async () => {
     try {
       setLoading(true);
 
-      const cursor = pageCursors[pagination.currentPage] || '';
+      const cursor = pageCursors[pagination.currentPage] || "";
       if (pagination.currentPage > 1 && !cursor) {
-        toast.error('Pagination state expired. Returning to page 1.');
+        toast.error("Pagination state expired. Returning to page 1.");
         setPagination((prev) => ({ ...prev, currentPage: 1 }));
-        setPageCursors({ 1: '' });
+        setPageCursors({ 1: "" });
         return;
       }
       const params = {
         page: pagination.currentPage,
         limit: pagination.limit,
         ...(cursor ? { cursor } : {}),
-        ...filters
+        ...filters,
       };
-      
+
       const response = await getAllBills(params);
       // Correct destructuring: response.data.data.bills
       const { bills, pagination: paginationData } = response.data;
@@ -104,22 +108,21 @@ const BillsPage = () => {
           [pagination.currentPage + 1]: paginationData.nextCursor,
         }));
       }
-      setPagination(prev => ({
+      setPagination((prev) => ({
         ...prev,
         totalPages: paginationData.totalPages,
         totalBills: paginationData.totalBills,
         hasNextPage: Boolean(paginationData.hasNextPage),
-        hasPrevPage: Boolean(paginationData.hasPrevPage)
+        hasPrevPage: Boolean(paginationData.hasPrevPage),
       }));
     } catch (error) {
-      console.error('Error fetching bills:', error);
-      toast.error('Failed to load bills');
+      toast.error(getErrorMessage(error, "Failed to load bills"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.currentPage, pagination.limit, filters, pageCursors]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await getBillStats(filters);
       // Correct destructuring: response.data.overview
@@ -134,118 +137,127 @@ const BillsPage = () => {
       // /bills/stats is temporarily disabled
       if (error?.response?.status === 404) return;
     }
-  };
+  }, [filters]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      setFilters(prev => ({ ...prev, mahalId: searchQuery.trim() }));
-      setPagination(prev => ({ ...prev, currentPage: 1 }));
-      setPageCursors({ 1: '' });
+      setFilters((prev) => ({ ...prev, mahalId: searchQuery.trim() }));
+      setPagination((prev) => ({ ...prev, currentPage: 1 }));
+      setPageCursors({ 1: "" });
     }
   };
 
   const handleFilterChange = (field, value) => {
-    setFilters(prev => ({ ...prev, [field]: value }));
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-    setPageCursors({ 1: '' });
+    setFilters((prev) => ({ ...prev, [field]: value }));
+    setPagination((prev) => ({ ...prev, currentPage: 1 }));
+    setPageCursors({ 1: "" });
   };
 
   const clearFilters = () => {
     setFilters({
-      accountType: '',
-      paymentMethod: '',
-      startDate: '',
-      endDate: '',
-      minAmount: '',
-      maxAmount: ''
+      accountType: "",
+      paymentMethod: "",
+      startDate: "",
+      endDate: "",
+      minAmount: "",
+      maxAmount: "",
     });
-    setSearchQuery('');
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
-    setPageCursors({ 1: '' });
+    setSearchQuery("");
+    setPagination((prev) => ({ ...prev, currentPage: 1 }));
+    setPageCursors({ 1: "" });
   };
 
   const handlePrintReceipt = (billId) => {
-    window.open(`/admin/receipt/${billId}`, '_blank');
+    window.open(`/admin/receipt/${billId}`, "_blank");
   };
 
   const handleExportCSV = () => {
     // Prepare CSV data
-    const headers = ['Receipt No', 'Date', 'Mahal ID', 'Member Name', 'Account Type', 'Amount', 'Payment Method'];
-    const rows = bills.map(bill => [
-      bill.receiptNo || 'N/A',
+    const headers = [
+      "Receipt No",
+      "Date",
+      "Mahal ID",
+      "Member Name",
+      "Account Type",
+      "Amount",
+      "Payment Method",
+    ];
+    const rows = bills.map((bill) => [
+      bill.receiptNo || "N/A",
       new Date(bill.createdAt || bill.date || bill.Date).toLocaleDateString(),
-      bill.mahalId || bill.Mahal_Id || bill.mahal_ID || 'N/A',
-      'N/A', // Member name needs to be fetched from member reference
-      bill.accountType || bill.category || 'N/A',
+      bill.mahalId || bill.Mahal_Id || bill.mahal_ID || "N/A",
+      "N/A", // Member name needs to be fetched from member reference
+      bill.accountType || bill.category || "N/A",
       bill.amount || 0,
-      bill.paymentMethod || 'Cash'
+      bill.paymentMethod || "Cash",
     ]);
 
     const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.join(','))
-    ].join('\n');
+      headers.join(","),
+      ...rows.map((row) => row.join(",")),
+    ].join("\n");
 
     // Download file
-    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `bills-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `bills-${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    toast.success('Bills exported successfully');
+    toast.success("Bills exported successfully");
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const getAccountTypeColor = (type) => {
     const colors = {
       // EidAnual categories
-      'Eid ul Adha': 'bg-pink-100 text-pink-800 border-pink-200',
-      'Eid al-Fitr': 'bg-purple-100 text-purple-800 border-purple-200',
-      'Dua_Friday': 'bg-indigo-100 text-indigo-800 border-indigo-200',
+      "Eid ul Adha": "bg-pink-100 text-pink-800 border-pink-200",
+      "Eid al-Fitr": "bg-purple-100 text-purple-800 border-purple-200",
+      Dua_Friday: "bg-indigo-100 text-indigo-800 border-indigo-200",
       // Account types
-      'Masjid': 'bg-blue-100 text-blue-800 border-blue-200',
-      'Madrassa': 'bg-purple-100 text-purple-800 border-purple-200',
-      'Sadhu': 'bg-green-100 text-green-800 border-green-200',
-      'Land': 'bg-amber-100 text-amber-800 border-amber-200',
-      'Nercha': 'bg-pink-100 text-pink-800 border-pink-200',
+      Masjid: "bg-blue-100 text-blue-800 border-blue-200",
+      Madrassa: "bg-purple-100 text-purple-800 border-purple-200",
+      Sadhu: "bg-green-100 text-green-800 border-green-200",
+      Land: "bg-amber-100 text-amber-800 border-amber-200",
+      Nercha: "bg-pink-100 text-pink-800 border-pink-200",
       // Account discriminators
-      'land': 'bg-amber-100 text-amber-800 border-amber-200',
-      'madrassa': 'bg-purple-100 text-purple-800 border-purple-200',
-      'nercha': 'bg-pink-100 text-pink-800 border-pink-200',
-      'sadhu': 'bg-green-100 text-green-800 border-green-200',
+      land: "bg-amber-100 text-amber-800 border-amber-200",
+      madrassa: "bg-purple-100 text-purple-800 border-purple-200",
+      nercha: "bg-pink-100 text-pink-800 border-pink-200",
+      sadhu: "bg-green-100 text-green-800 border-green-200",
       // Other categories
-      'Donation': 'bg-teal-100 text-teal-800 border-teal-200',
-      'Sunnath Fee': 'bg-cyan-100 text-cyan-800 border-cyan-200',
-      'Marriage Fee': 'bg-rose-100 text-rose-800 border-rose-200',
-      'Product Turnover': 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      'Rental_Basis': 'bg-orange-100 text-orange-800 border-orange-200',
-      'Devotional Dedication': 'bg-violet-100 text-violet-800 border-violet-200',
-      'Dead Fee': 'bg-slate-100 text-slate-800 border-slate-200',
-      'New Membership': 'bg-sky-100 text-sky-800 border-sky-200',
-      'Certificate Fee': 'bg-lime-100 text-lime-800 border-lime-200',
+      Donation: "bg-teal-100 text-teal-800 border-teal-200",
+      "Sunnath Fee": "bg-cyan-100 text-cyan-800 border-cyan-200",
+      "Marriage Fee": "bg-rose-100 text-rose-800 border-rose-200",
+      "Product Turnover": "bg-emerald-100 text-emerald-800 border-emerald-200",
+      Rental_Basis: "bg-orange-100 text-orange-800 border-orange-200",
+      "Devotional Dedication":
+        "bg-violet-100 text-violet-800 border-violet-200",
+      "Dead Fee": "bg-slate-100 text-slate-800 border-slate-200",
+      "New Membership": "bg-sky-100 text-sky-800 border-sky-200",
+      "Certificate Fee": "bg-lime-100 text-lime-800 border-lime-200",
     };
-    return colors[type] || 'bg-gray-100 text-gray-800 border-gray-200';
+    return colors[type] || "bg-gray-100 text-gray-800 border-gray-200";
   };
 
   const getPaymentMethodColor = (method) => {
     const colors = {
-      'Cash': 'bg-green-50 text-green-700 border-green-200',
-      'UPI': 'bg-purple-50 text-purple-700 border-purple-200',
-      'Card': 'bg-blue-50 text-blue-700 border-blue-200',
-      'Bank Transfer': 'bg-indigo-50 text-indigo-700 border-indigo-200',
-      'Cheque': 'bg-amber-50 text-amber-700 border-amber-200',
+      Cash: "bg-green-50 text-green-700 border-green-200",
+      UPI: "bg-purple-50 text-purple-700 border-purple-200",
+      Card: "bg-blue-50 text-blue-700 border-blue-200",
+      "Bank Transfer": "bg-indigo-50 text-indigo-700 border-indigo-200",
+      Cheque: "bg-amber-50 text-amber-700 border-amber-200",
     };
-    return colors[method] || 'bg-gray-50 text-gray-700 border-gray-200';
+    return colors[method] || "bg-gray-50 text-gray-700 border-gray-200";
   };
 
   return (
@@ -263,7 +275,9 @@ const BillsPage = () => {
               {/* <DocumentTextIcon className="w-10 h-10 text-[#31757A]" /> */}
               Billing Management
             </h1>
-            <p className="text-gray-600 mt-2 text-lg">Track and manage all billing transactions</p>
+            <p className="text-gray-600 mt-2 text-lg">
+              Track and manage all billing transactions
+            </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Button
@@ -277,7 +291,7 @@ const BillsPage = () => {
             <Button
               variant="primary"
               leftIcon={<PlusIcon className="h-5 w-5" />}
-              onClick={() => navigate('/admin/quick-pay')}
+              onClick={() => navigate("/admin/quick-pay")}
               className="bg-linear-to-r from-[#31757A] to-[#41A4A7] hover:from-[#41A4A7] hover:to-[#31757A] shadow-lg hover:shadow-xl transition-all"
             >
               Quick Pay
@@ -388,7 +402,10 @@ const BillsPage = () => {
         <Card className="shadow-xl border-0 overflow-hidden">
           <Card.Content className="p-6">
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4 mb-4">
+            <form
+              onSubmit={handleSearch}
+              className="flex flex-col sm:flex-row gap-4 mb-4"
+            >
               <div className="flex-1 relative">
                 <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -413,12 +430,15 @@ const BillsPage = () => {
                 onClick={() => setShowFilters(!showFilters)}
                 className={cn(
                   "border-2 border-gray-200 hover:border-[#31757A] hover:bg-[#E3F9F9] transition-all shadow-sm hover:shadow-md",
-                  showFilters && "bg-[#E3F9F9] border-[#31757A]"
+                  showFilters && "bg-[#E3F9F9] border-[#31757A]",
                 )}
               >
                 Filters
                 {Object.values(filters).filter(Boolean).length > 0 && (
-                  <Badge variant="primary" className="ml-2 bg-[#31757A] text-white">
+                  <Badge
+                    variant="primary"
+                    className="ml-2 bg-[#31757A] text-white"
+                  >
                     {Object.values(filters).filter(Boolean).length}
                   </Badge>
                 )}
@@ -430,7 +450,7 @@ const BillsPage = () => {
               {showFilters && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
+                  animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.3 }}
                   className="border-t-2 border-gray-100 pt-6 mt-2"
@@ -442,12 +462,16 @@ const BillsPage = () => {
                       </label>
                       <select
                         value={filters.accountType}
-                        onChange={(e) => handleFilterChange('accountType', e.target.value)}
+                        onChange={(e) =>
+                          handleFilterChange("accountType", e.target.value)
+                        }
                         className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#31757A] focus:border-[#31757A] transition-all shadow-sm hover:shadow-md text-sm"
                       >
                         <option value="">All Types</option>
-                        {ACCOUNT_TYPES.map(type => (
-                          <option key={type.value} value={type.value}>{type.label}</option>
+                        {ACCOUNT_TYPES.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -458,12 +482,16 @@ const BillsPage = () => {
                       </label>
                       <select
                         value={filters.paymentMethod}
-                        onChange={(e) => handleFilterChange('paymentMethod', e.target.value)}
+                        onChange={(e) =>
+                          handleFilterChange("paymentMethod", e.target.value)
+                        }
                         className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#31757A] focus:border-[#31757A] transition-all shadow-sm hover:shadow-md text-sm"
                       >
                         <option value="">All Methods</option>
-                        {paymentMethods.map(method => (
-                          <option key={method} value={method}>{method}</option>
+                        {paymentMethods.map((method) => (
+                          <option key={method} value={method}>
+                            {method}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -475,7 +503,9 @@ const BillsPage = () => {
                       <input
                         type="date"
                         value={filters.startDate}
-                        onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                        onChange={(e) =>
+                          handleFilterChange("startDate", e.target.value)
+                        }
                         className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#31757A] focus:border-[#31757A] transition-all shadow-sm hover:shadow-md text-sm"
                       />
                     </div>
@@ -487,7 +517,9 @@ const BillsPage = () => {
                       <input
                         type="date"
                         value={filters.endDate}
-                        onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                        onChange={(e) =>
+                          handleFilterChange("endDate", e.target.value)
+                        }
                         className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#31757A] focus:border-[#31757A] transition-all shadow-sm hover:shadow-md text-sm"
                       />
                     </div>
@@ -499,7 +531,9 @@ const BillsPage = () => {
                       <input
                         type="number"
                         value={filters.minAmount}
-                        onChange={(e) => handleFilterChange('minAmount', e.target.value)}
+                        onChange={(e) =>
+                          handleFilterChange("minAmount", e.target.value)
+                        }
                         placeholder="₹0"
                         className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#31757A] focus:border-[#31757A] transition-all shadow-sm hover:shadow-md text-sm"
                       />
@@ -512,7 +546,9 @@ const BillsPage = () => {
                       <input
                         type="number"
                         value={filters.maxAmount}
-                        onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
+                        onChange={(e) =>
+                          handleFilterChange("maxAmount", e.target.value)
+                        }
                         placeholder="₹10000"
                         className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-[#31757A] focus:border-[#31757A] transition-all shadow-sm hover:shadow-md text-sm"
                       />
@@ -568,7 +604,9 @@ const BillsPage = () => {
                     <DocumentTextIcon className="h-6 w-6 text-[#31757A]" />
                   </div>
                 </div>
-                <p className="mt-4 text-gray-600 font-medium">Loading bills...</p>
+                <p className="mt-4 text-gray-600 font-medium">
+                  Loading bills...
+                </p>
               </div>
             ) : bills.length === 0 ? (
               <div className="text-center py-24">
@@ -577,16 +615,18 @@ const BillsPage = () => {
                     <DocumentTextIcon className="w-16 h-16 text-[#31757A]" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-gray-700 mb-2">No bills found</p>
+                    <p className="text-xl font-bold text-gray-700 mb-2">
+                      No bills found
+                    </p>
                     <p className="text-sm text-gray-500 mb-4">
                       {searchQuery || Object.values(filters).some(Boolean)
-                        ? 'Try adjusting your search or filters'
-                        : 'Start by creating your first bill'}
+                        ? "Try adjusting your search or filters"
+                        : "Start by creating your first bill"}
                     </p>
                     <Button
                       variant="primary"
                       leftIcon={<PlusIcon className="h-5 w-5" />}
-                      onClick={() => navigate('/admin/quick-pay')}
+                      onClick={() => navigate("/admin/quick-pay")}
                       className="bg-linear-to-r from-[#31757A] to-[#41A4A7] shadow-lg hover:shadow-xl"
                     >
                       Create First Bill
@@ -599,14 +639,30 @@ const BillsPage = () => {
                 <table className="w-full">
                   <thead className="bg-linear-to-r from-gray-50 to-[#E3F9F9]/30 border-b-2 border-gray-200">
                     <tr>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Receipt No</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Date & Time</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Member ID</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Member Name</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Account Type</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Payment</th>
-                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Receipt No
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Date & Time
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Member ID
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Member Name
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Account Type
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Amount
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Payment
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
@@ -620,40 +676,53 @@ const BillsPage = () => {
                       >
                         <td className="px-6 py-5 whitespace-nowrap">
                           <span className="text-sm font-bold text-[#31757A] group-hover:text-[#41A4A7] transition-colors">
-                            {bill.receiptNo || 'N/A'}
+                            {bill.receiptNo || "N/A"}
                           </span>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
                           <div className="text-sm">
                             <div className="font-semibold text-gray-900">
-                              {new Date(bill.createdAt || bill.date || bill.Date).toLocaleDateString('en-IN', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric'
+                              {new Date(
+                                bill.createdAt || bill.date || bill.Date,
+                              ).toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
                               })}
                             </div>
                             <div className="text-xs text-gray-500">
-                              {new Date(bill.createdAt || bill.date || bill.Date).toLocaleTimeString('en-IN', {
-                                hour: '2-digit',
-                                minute: '2-digit'
+                              {new Date(
+                                bill.createdAt || bill.date || bill.Date,
+                              ).toLocaleTimeString("en-IN", {
+                                hour: "2-digit",
+                                minute: "2-digit",
                               })}
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
                           <span className="text-sm font-bold text-gray-900">
-                            {bill.mahalId || bill.Mahal_Id || bill.mahal_ID || <span className="text-gray-400">N/A</span>}
+                            {bill.mahalId || bill.Mahal_Id || bill.mahal_ID || (
+                              <span className="text-gray-400">N/A</span>
+                            )}
                           </span>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <div className="shrink-0">
                               <div className="h-10 w-10 rounded-full bg-linear-to-br from-[#31757A] to-[#41A4A7] flex items-center justify-center text-white font-bold shadow-md">
-                                {bill.memberId?.Fname?.charAt(0).toUpperCase() || bill.address?.charAt(0).toUpperCase() || '?'}
+                                {bill.memberId?.Fname?.charAt(
+                                  0,
+                                ).toUpperCase() ||
+                                  bill.address?.charAt(0).toUpperCase() ||
+                                  "?"}
                               </div>
                             </div>
                             <div className="text-sm font-semibold text-gray-900">
-                              {bill.memberId?.Fname || bill.address?.substring(0, 20) || <span className="text-gray-400">N/A</span>}
+                              {bill.memberId?.Fname ||
+                                bill.address?.substring(0, 20) || (
+                                  <span className="text-gray-400">N/A</span>
+                                )}
                             </div>
                           </div>
                         </td>
@@ -661,11 +730,13 @@ const BillsPage = () => {
                           <Badge
                             className={cn(
                               "font-semibold border",
-                              getAccountTypeColor(bill.accountType || bill.category)
+                              getAccountTypeColor(
+                                bill.accountType || bill.category,
+                              ),
                             )}
                             size="sm"
                           >
-                            {bill.accountType || bill.category || 'N/A'}
+                            {bill.accountType || bill.category || "N/A"}
                           </Badge>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">
@@ -677,11 +748,13 @@ const BillsPage = () => {
                           <Badge
                             className={cn(
                               "font-semibold border",
-                              getPaymentMethodColor(bill.paymentMethod || 'Cash')
+                              getPaymentMethodColor(
+                                bill.paymentMethod || "Cash",
+                              ),
                             )}
                             size="sm"
                           >
-                            {bill.paymentMethod || 'Cash'}
+                            {bill.paymentMethod || "Cash"}
                           </Badge>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
@@ -708,15 +781,33 @@ const BillsPage = () => {
             <Card.Footer className="bg-linear-to-r from-gray-50 to-[#E3F9F9]/30 border-t-2 border-gray-100">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-2">
                 <p className="text-sm text-gray-600 font-medium">
-                  Showing <span className="font-bold text-[#31757A]">{((pagination.currentPage - 1) * pagination.limit) + 1}</span> to{' '}
-                  <span className="font-bold text-[#31757A]">{Math.min(pagination.currentPage * pagination.limit, pagination.totalBills)}</span> of{' '}
-                  <span className="font-bold text-[#31757A]">{pagination.totalBills}</span> bills
+                  Showing{" "}
+                  <span className="font-bold text-[#31757A]">
+                    {(pagination.currentPage - 1) * pagination.limit + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-bold text-[#31757A]">
+                    {Math.min(
+                      pagination.currentPage * pagination.limit,
+                      pagination.totalBills,
+                    )}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-bold text-[#31757A]">
+                    {pagination.totalBills}
+                  </span>{" "}
+                  bills
                 </p>
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+                    onClick={() =>
+                      setPagination((prev) => ({
+                        ...prev,
+                        currentPage: prev.currentPage - 1,
+                      }))
+                    }
                     disabled={!pagination.hasPrevPage}
                     className="border-2 border-gray-200 hover:border-[#31757A] hover:bg-[#E3F9F9] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold transition-all shadow-sm hover:shadow-md"
                   >
@@ -728,7 +819,12 @@ const BillsPage = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+                    onClick={() =>
+                      setPagination((prev) => ({
+                        ...prev,
+                        currentPage: prev.currentPage + 1,
+                      }))
+                    }
                     disabled={!pagination.hasNextPage}
                     className="border-2 border-gray-200 hover:border-[#31757A] hover:bg-[#E3F9F9] disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-semibold transition-all shadow-sm hover:shadow-md"
                   >

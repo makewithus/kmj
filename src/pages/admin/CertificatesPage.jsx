@@ -3,7 +3,7 @@
  * Admin page for generating certificates (Marriage, Death, Transfer)
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Award, Plus, Pencil, Trash2, X, Search } from "lucide-react";
@@ -11,6 +11,7 @@ import toast from "react-hot-toast";
 import AdminLayout from "../../components/layout/AdminLayout";
 import { Card, Button, Input, Badge } from "../../components/common";
 import { ANIMATION_VARIANTS, CERTIFICATE_TYPES } from "../../lib/constants";
+import { getErrorMessage } from "../../lib/utils";
 import certificateService from "../../services/certificateService";
 
 const CertificatesPage = () => {
@@ -27,11 +28,7 @@ const CertificatesPage = () => {
     details: {},
   });
 
-  useEffect(() => {
-    fetchCertificates();
-  }, [filterType]);
-
-  const fetchCertificates = async () => {
+  const fetchCertificates = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
@@ -40,12 +37,15 @@ const CertificatesPage = () => {
       const response = await certificateService.getAll(params);
       setCertificates(response.data || []);
     } catch (error) {
-      console.error("Error fetching certificates:", error);
-      toast.error("Failed to fetch certificates");
+      toast.error(getErrorMessage(error, "Failed to fetch certificates"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterType]);
+
+  useEffect(() => {
+    fetchCertificates();
+  }, [fetchCertificates]);
 
   const handleOpenModal = (certificate = null) => {
     if (certificate) {
@@ -96,10 +96,7 @@ const CertificatesPage = () => {
       handleCloseModal();
       fetchCertificates();
     } catch (error) {
-      console.error("Error saving certificate:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to save certificate",
-      );
+      toast.error(getErrorMessage(error, "Failed to save certificate"));
     }
   };
 
@@ -112,8 +109,7 @@ const CertificatesPage = () => {
       toast.success("Certificate deleted successfully");
       fetchCertificates();
     } catch (error) {
-      console.error("Error deleting certificate:", error);
-      toast.error("Failed to delete certificate");
+      toast.error(getErrorMessage(error, "Failed to delete certificate"));
     }
   };
 

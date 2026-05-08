@@ -3,8 +3,8 @@
  * Display-only view of admin profile information (no edit functionality)
  */
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   User,
   Phone,
@@ -14,12 +14,13 @@ import {
   Shield,
   Calendar,
   CheckCircle,
-} from 'lucide-react';
-import AdminLayout from '../../components/layout/AdminLayout';
-import { Card, Avatar, Badge } from '../../components/common';
-import useAuthStore from '../../store/authStore';
-import api from '../../api/axios.config';
-import toast from 'react-hot-toast';
+} from "lucide-react";
+import AdminLayout from "../../components/layout/AdminLayout";
+import { Card, Avatar, Badge } from "../../components/common";
+import useAuthStore from "../../store/authStore";
+import api from "../../api/axios.config";
+import toast from "react-hot-toast";
+import { getErrorMessage } from "../../lib/utils";
 
 const AdminProfilePage = () => {
   const { user } = useAuthStore();
@@ -33,14 +34,13 @@ const AdminProfilePage = () => {
   const fetchAdminProfile = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/auth/admin/profile');
-      
+      const response = await api.get("/auth/admin/profile");
+
       if (response.success) {
         setAdminData(response.data.user);
       }
     } catch (error) {
-      console.error('Failed to fetch admin profile:', error);
-      toast.error(error.message || 'Failed to load profile');
+      toast.error(getErrorMessage(error, "Failed to load profile"));
     } finally {
       setLoading(false);
     }
@@ -57,7 +57,7 @@ const AdminProfilePage = () => {
             {label}
           </p>
           <p className="text-base font-semibold text-[#1F2E2E] wrap-break-word">
-            {value || 'Not provided'}
+            {value || "Not provided"}
           </p>
         </div>
       </div>
@@ -79,7 +79,7 @@ const AdminProfilePage = () => {
   return (
     <AdminLayout>
       {/* Header */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
@@ -89,9 +89,7 @@ const AdminProfilePage = () => {
             <h1 className="text-4xl font-bold bg-linear-to-r from-[#1F2E2E] via-[#31757A] to-[#41A4A7] bg-clip-text text-transparent">
               Admin Profile
             </h1>
-            <p className="text-gray-600 mt-1">
-              View your account information
-            </p>
+            <p className="text-gray-600 mt-1">View your account information</p>
           </div>
         </div>
       </motion.div>
@@ -120,12 +118,15 @@ const AdminProfilePage = () => {
                 </div>
 
                 <h2 className="text-2xl font-bold text-[#1F2E2E] mb-1">
-                  {displayData?.name || 'Administrator'}
+                  {displayData?.name || "Administrator"}
                 </h2>
                 <p className="text-sm text-gray-600 mb-3">
                   {displayData?.memberId && (
                     <>
-                      Member ID: <span className="font-semibold text-[#31757A]">{displayData.memberId}</span>
+                      Member ID:{" "}
+                      <span className="font-semibold text-[#31757A]">
+                        {displayData.memberId}
+                      </span>
                     </>
                   )}
                 </p>
@@ -134,22 +135,30 @@ const AdminProfilePage = () => {
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[#E3F9F9]/30 transition-colors">
                       <span className="text-gray-600 font-medium">Ward</span>
-                      <span className="font-bold text-[#1F2E2E]">{displayData?.ward || 'N/A'}</span>
+                      <span className="font-bold text-[#1F2E2E]">
+                        {displayData?.ward || "N/A"}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[#E3F9F9]/30 transition-colors">
                       <span className="text-gray-600 font-medium">Role</span>
-                      <span className="font-bold text-[#1F2E2E] capitalize">{displayData?.role || 'Admin'}</span>
+                      <span className="font-bold text-[#1F2E2E] capitalize">
+                        {displayData?.role || "Admin"}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[#E3F9F9]/30 transition-colors">
                       <span className="text-gray-600 font-medium">Status</span>
                       <Badge className="bg-green-100 text-green-700">
-                        {displayData?.isActive ? 'Active' : 'Inactive'}
+                        {displayData?.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between p-2 rounded-lg hover:bg-[#E3F9F9]/30 transition-colors">
-                      <span className="text-gray-600 font-medium">Member Since</span>
+                      <span className="text-gray-600 font-medium">
+                        Member Since
+                      </span>
                       <span className="font-bold text-[#1F2E2E]">
-                        {displayData?.createdAt ? new Date(displayData.createdAt).getFullYear() : 'N/A'}
+                        {displayData?.createdAt
+                          ? new Date(displayData.createdAt).getFullYear()
+                          : "N/A"}
                       </span>
                     </div>
                   </div>
@@ -218,11 +227,18 @@ const AdminProfilePage = () => {
                 <InfoField
                   icon={Calendar}
                   label="Account Created"
-                  value={displayData?.createdAt ? new Date(displayData.createdAt).toLocaleDateString('en-IN', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  }) : 'N/A'}
+                  value={
+                    displayData?.createdAt
+                      ? new Date(displayData.createdAt).toLocaleDateString(
+                          "en-IN",
+                          {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          },
+                        )
+                      : "N/A"
+                  }
                 />
               </div>
             </div>

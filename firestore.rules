@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Jamat Portals ──────────────────────────────────────────────────────────
+    // Jamat admins can only read/write their own portal sub-collections.
+    match /jamat_portals/{jamatId} {
+      allow read: if request.auth != null && request.auth.token.role == 'admin';
+      allow write: if request.auth != null && request.auth.token.role == 'admin';
+
+      match /{subcollection}/{document=**} {
+        allow read, write: if request.auth != null && request.auth.token.role == 'admin';
+      }
+    }
+
+    // ── All other collections ──────────────────────────────────────────────────
+    // All access is handled server-side via Firebase Admin SDK.
+    // Client-side direct access is denied.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

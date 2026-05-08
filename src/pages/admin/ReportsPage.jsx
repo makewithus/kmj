@@ -3,7 +3,7 @@
  * Admin page for managing complaints and repairs
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, Plus, Pencil, Trash2, X, Search } from "lucide-react";
@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 import AdminLayout from "../../components/layout/AdminLayout";
 import { Card, Button, Input, Badge } from "../../components/common";
 import { ANIMATION_VARIANTS, REPORT_STATUS } from "../../lib/constants";
-import { cn } from "../../lib/utils";
+import { cn, getErrorMessage } from "../../lib/utils";
 import reportService from "../../services/reportService";
 import inventoryService from "../../services/inventoryService";
 
@@ -31,12 +31,7 @@ const ReportsPage = () => {
     inventoryItem: "",
   });
 
-  useEffect(() => {
-    fetchReports();
-    fetchInventoryItems();
-  }, [filterStatus]);
-
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
@@ -45,21 +40,25 @@ const ReportsPage = () => {
       const response = await reportService.getAll(params);
       setReports(response.data || []);
     } catch (error) {
-      console.error("Error fetching reports:", error);
-      toast.error("Failed to fetch reports");
+      toast.error(getErrorMessage(error, "Failed to fetch reports"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
-  const fetchInventoryItems = async () => {
+  const fetchInventoryItems = useCallback(async () => {
     try {
       const response = await inventoryService.getAll();
       setInventoryItems(response.data || []);
-    } catch (error) {
-      console.error("Error fetching inventory:", error);
+    } catch {
+      // inventory items are optional for report form
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchReports();
+    fetchInventoryItems();
+  }, [fetchReports, fetchInventoryItems]);
 
   const handleOpenModal = (report = null) => {
     if (report) {
@@ -116,8 +115,7 @@ const ReportsPage = () => {
       handleCloseModal();
       fetchReports();
     } catch (error) {
-      console.error("Error saving report:", error);
-      toast.error(error.response?.data?.message || "Failed to save report");
+      toast.error(getErrorMessage(error, "Failed to save report"));
     }
   };
 
@@ -129,8 +127,7 @@ const ReportsPage = () => {
       toast.success("Report deleted successfully");
       fetchReports();
     } catch (error) {
-      console.error("Error deleting report:", error);
-      toast.error("Failed to delete report");
+      toast.error(getErrorMessage(error, "Failed to delete report"));
     }
   };
 

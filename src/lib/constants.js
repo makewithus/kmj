@@ -275,6 +275,7 @@ export const ADMIN_NAV = [
   { label: "Inventory", path: "/admin/inventory", icon: "Package" },
   { label: "Reports", path: "/admin/reports", icon: "AlertCircle" },
   // { label: 'Certificates', path: '/admin/certificates', icon: 'Award' },
+  { label: "Dashboard Access", path: "/admin/dashboard-access", icon: "Globe" },
 ];
 
 // Navigation Menu (User)

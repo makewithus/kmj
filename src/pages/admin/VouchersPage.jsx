@@ -3,7 +3,7 @@
  * Admin page for managing vouchers
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Plus, Pencil, Trash2, X, Search } from "lucide-react";
@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 import AdminLayout from "../../components/layout/AdminLayout";
 import { Card, Button, Input, Badge } from "../../components/common";
 import { ANIMATION_VARIANTS, VOUCHER_SERVICES } from "../../lib/constants";
-import { cn } from "../../lib/utils";
+import { cn, getErrorMessage } from "../../lib/utils";
 import voucherService from "../../services/voucherService";
 
 const VouchersPage = () => {
@@ -29,12 +29,7 @@ const VouchersPage = () => {
     service: "",
   });
 
-  // Fetch vouchers
-  useEffect(() => {
-    fetchVouchers();
-  }, [filterService]);
-
-  const fetchVouchers = async () => {
+  const fetchVouchers = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
@@ -43,12 +38,16 @@ const VouchersPage = () => {
       const response = await voucherService.getAll(params);
       setVouchers(response.data || []);
     } catch (error) {
-      console.error("Error fetching vouchers:", error);
-      toast.error("Failed to fetch vouchers");
+      toast.error(getErrorMessage(error, "Failed to fetch vouchers"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterService]);
+
+  // Fetch vouchers
+  useEffect(() => {
+    fetchVouchers();
+  }, [fetchVouchers]);
 
   const handleOpenModal = (voucher = null) => {
     if (voucher) {
@@ -107,8 +106,7 @@ const VouchersPage = () => {
       handleCloseModal();
       fetchVouchers();
     } catch (error) {
-      console.error("Error saving voucher:", error);
-      toast.error(error.response?.data?.message || "Failed to save voucher");
+      toast.error(getErrorMessage(error, "Failed to save voucher"));
     }
   };
 
@@ -121,8 +119,7 @@ const VouchersPage = () => {
       toast.success("Voucher deleted successfully");
       fetchVouchers();
     } catch (error) {
-      console.error("Error deleting voucher:", error);
-      toast.error("Failed to delete voucher");
+      toast.error(getErrorMessage(error, "Failed to delete voucher"));
     }
   };
 

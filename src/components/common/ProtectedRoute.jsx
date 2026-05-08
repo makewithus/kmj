@@ -3,13 +3,18 @@
  * Route guard for authenticated users
  */
 
-import { Navigate, useLocation } from 'react-router-dom';
-import useAuthStore from '../../store/authStore';
-import { PageLoader } from '../../components/common/Loading';
+import { Navigate, useLocation } from "react-router-dom";
+import useAuthStore from "../../store/authStore";
+import { PageLoader } from "../../components/common/Loading";
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
-  const { isAuthenticated, isAdmin, user } = useAuthStore();
+  const { isAuthenticated, isAdmin, user, _hydrated } = useAuthStore();
   const location = useLocation();
+
+  // Wait for Zustand persist to finish rehydrating from localStorage
+  if (!_hydrated) {
+    return <PageLoader message="Loading..." />;
+  }
 
   // Show loading while checking auth state
   if (isAuthenticated === null) {

@@ -3,9 +3,9 @@
  * Central hub with quick actions and member search
  */
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   UsersIcon,
   DocumentTextIcon,
@@ -21,52 +21,68 @@ import {
   DocumentPlusIcon,
   BellAlertIcon,
   EyeIcon,
-} from '@heroicons/react/24/outline';
-import AdminLayout from '../../components/layout/AdminLayout';
-import { Skeleton, Card } from '../../components/common';
-import { ANIMATION_VARIANTS } from '../../lib/constants';
-import axiosInstance from '../../api/axios.config';
-import toast from 'react-hot-toast';
+} from "@heroicons/react/24/outline";
+import AdminLayout from "../../components/layout/AdminLayout";
+import { Skeleton, Card } from "../../components/common";
+import { ANIMATION_VARIANTS } from "../../lib/constants";
+import axiosInstance from "../../api/axios.config";
+import toast from "react-hot-toast";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
 
   // Quick action cards configuration
   const quickActions = [
     {
-      id: 'members',
-      title: 'Member Management',
-      description: 'View, add, and manage member records',
+      id: "members",
+      title: "Member Management",
+      description: "View, add, and manage member records",
       icon: UsersIcon,
-      gradient: 'from-[#31757A] to-[#41A4A7]',
+      gradient: "from-[#31757A] to-[#41A4A7]",
       actions: [
-        { label: 'View All Members', icon: UsersIcon, path: '/admin/members' },
-        { label: 'Add New Member', icon: UserPlusIcon, path: '/admin/members?action=add' },
+        { label: "View All Members", icon: UsersIcon, path: "/admin/members" },
+        {
+          label: "Add New Member",
+          icon: UserPlusIcon,
+          path: "/admin/members?action=add",
+        },
       ],
     },
     {
-      id: 'billing',
-      title: 'Billing & Payments',
-      description: 'Manage bills and process payments',
+      id: "billing",
+      title: "Billing & Payments",
+      description: "Manage bills and process payments",
       icon: CurrencyDollarIcon,
-      gradient: 'from-[#41A4A7] to-[#31757A]',
+      gradient: "from-[#41A4A7] to-[#31757A]",
       actions: [
-        { label: 'View All Bills', icon: DocumentTextIcon, path: '/admin/bills' },
-        { label: 'Quick Payment', icon: CreditCardIcon, path: '/admin/quick-pay' },
+        {
+          label: "View All Bills",
+          icon: DocumentTextIcon,
+          path: "/admin/bills",
+        },
+        {
+          label: "Quick Payment",
+          icon: CreditCardIcon,
+          path: "/admin/quick-pay",
+        },
       ],
     },
     {
-      id: 'notices',
-      title: 'Notices & Announcements',
-      description: 'Post and manage community notices',
+      id: "notices",
+      title: "Notices & Announcements",
+      description: "Post and manage community notices",
       icon: BellIcon,
-      gradient: 'from-[#1F2E2E] to-[#31757A]',
+      gradient: "from-[#1F2E2E] to-[#31757A]",
       actions: [
-        { label: 'View All Notices', icon: BellIcon, path: '/admin/notices' },
-        { label: 'Create Notice', icon: DocumentPlusIcon, path: '/admin/notices?action=create' },
+        { label: "View All Notices", icon: BellIcon, path: "/admin/notices" },
+        {
+          label: "Create Notice",
+          icon: DocumentPlusIcon,
+          path: "/admin/notices?action=create",
+        },
       ],
     },
     // {
@@ -94,13 +110,14 @@ const AdminDashboard = () => {
         setSearching(true);
         // Use the search endpoint with proper encoding
         const encodedQuery = encodeURIComponent(searchQuery.trim());
-        const response = await axiosInstance.get(`/members/search?q=${encodedQuery}&type=all`);
-        
+        const response = await axiosInstance.get(
+          `/members/search?q=${encodedQuery}&type=all`,
+        );
+
         // Response structure: { success, count, data: [...members array] }
         setSearchResults(response.data || []);
       } catch (error) {
-        console.error('Search error:', error);
-        toast.error('Failed to search members');
+        toast.error("Failed to search members");
         setSearchResults([]);
       } finally {
         setSearching(false);
@@ -151,7 +168,9 @@ const AdminDashboard = () => {
           <Card.Content className="p-4 sm:p-6">
             <div className="flex items-center gap-3 mb-4">
               <MagnifyingGlassIcon className="h-5 w-5 sm:h-6 sm:w-6 text-[#31757A]" />
-              <h2 className="text-base sm:text-lg font-bold text-[#1F2E2E]">Quick Member Search</h2>
+              <h2 className="text-base sm:text-lg font-bold text-[#1F2E2E]">
+                Quick Member Search
+              </h2>
             </div>
             <p className="text-xs sm:text-sm text-gray-600 mb-4">
               Search for members by name, Mahal ID, or phone number
@@ -204,9 +223,12 @@ const AdminDashboard = () => {
                         <td colSpan="5" className="px-6 py-12 text-center">
                           <div className="flex flex-col items-center justify-center">
                             <MagnifyingGlassIcon className="h-12 w-12 text-gray-300 mb-3" />
-                            <p className="text-gray-600 font-medium">Search for any member</p>
+                            <p className="text-gray-600 font-medium">
+                              Search for any member
+                            </p>
                             <p className="text-sm text-gray-500 mt-1">
-                              Enter name, Mahal ID, or phone number to find members
+                              Enter name, Mahal ID, or phone number to find
+                              members
                             </p>
                           </div>
                         </td>
@@ -227,8 +249,12 @@ const AdminDashboard = () => {
                             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-3">
                               <MagnifyingGlassIcon className="h-8 w-8 text-gray-400" />
                             </div>
-                            <p className="text-gray-600 font-medium">No members found</p>
-                            <p className="text-sm text-gray-500 mt-1">Try a different search term</p>
+                            <p className="text-gray-600 font-medium">
+                              No members found
+                            </p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Try a different search term
+                            </p>
                           </div>
                         </td>
                       </tr>
@@ -240,42 +266,54 @@ const AdminDashboard = () => {
                         >
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                             <span className="text-xs sm:text-sm font-semibold text-[#31757A]">
-                              {member.Mid || 'N/A'}
+                              {member.Mid || "N/A"}
                             </span>
                           </td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                             <span className="text-xs sm:text-sm font-medium text-gray-900">
-                              {member.Fname || 'N/A'}
+                              {member.Fname || "N/A"}
                             </span>
                           </td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden sm:table-cell">
                             <span className="text-xs sm:text-sm text-gray-600">
-                              {member.Mobile || 'N/A'}
+                              {member.Mobile || "N/A"}
                             </span>
                           </td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap hidden md:table-cell">
                             <span className="text-xs sm:text-sm text-gray-600">
-                              {member.Mward || 'N/A'}
+                              {member.Mward || "N/A"}
                             </span>
                           </td>
                           <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
                             <div className="flex items-center justify-center gap-1 sm:gap-2 flex-wrap">
                               <button
-                                onClick={() => navigate(`/admin/members?search=${encodeURIComponent(member.Mid)}`)}
+                                onClick={() =>
+                                  navigate(
+                                    `/admin/members?search=${encodeURIComponent(member.Mid)}`,
+                                  )
+                                }
                                 className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-[#31757A] text-white text-xs font-medium rounded-lg hover:bg-[#41A4A7] transition-colors"
                               >
                                 <EyeIcon className="h-3 w-3 sm:h-4 sm:w-4" />
                                 <span className="hidden sm:inline">View</span>
                               </button>
                               <button
-                                onClick={() => navigate(`/admin/bills?search=${encodeURIComponent(member.Mid)}`)}
+                                onClick={() =>
+                                  navigate(
+                                    `/admin/bills?search=${encodeURIComponent(member.Mid)}`,
+                                  )
+                                }
                                 className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors"
                               >
                                 <DocumentTextIcon className="h-3 w-3 sm:h-4 sm:w-4" />
                                 <span className="hidden sm:inline">Bills</span>
                               </button>
                               <button
-                                onClick={() => navigate(`/admin/quick-pay?member=${encodeURIComponent(member.Fname)}`)}
+                                onClick={() =>
+                                  navigate(
+                                    `/admin/quick-pay?member=${encodeURIComponent(member.Fname)}`,
+                                  )
+                                }
                                 className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition-colors"
                               >
                                 <CreditCardIcon className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -294,7 +332,11 @@ const AdminDashboard = () => {
             {searchResults.length > 0 && (
               <div className="mt-4 flex items-center justify-between text-sm text-gray-600">
                 <p>
-                  Showing <span className="font-semibold text-[#31757A]">{searchResults.length}</span> member{searchResults.length !== 1 ? 's' : ''}
+                  Showing{" "}
+                  <span className="font-semibold text-[#31757A]">
+                    {searchResults.length}
+                  </span>{" "}
+                  member{searchResults.length !== 1 ? "s" : ""}
                 </p>
               </div>
             )}

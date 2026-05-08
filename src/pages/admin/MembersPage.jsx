@@ -14,14 +14,17 @@ import {
   UsersIcon,
   FunnelIcon,
   XMarkIcon,
+  EyeIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import AdminLayout from "../../components/layout/AdminLayout";
 import { Card, Button, Badge, Input, Skeleton } from "../../components/common";
 import { ANIMATION_VARIANTS } from "../../lib/constants";
-import { cn } from "../../lib/utils";
+import { cn, getErrorMessage } from "../../lib/utils";
 import { getAllMembers, deleteMember } from "../../services/memberService";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import MemberDetailModal from "../../components/modals/MemberDetailModal";
 import {
@@ -50,6 +53,7 @@ const MembersPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [expandedMids, setExpandedMids] = useState(new Set());
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20, // Show 20 members per page for better UX
@@ -181,7 +185,7 @@ const MembersPage = () => {
     }, 500); // Wait 500ms after user stops typing
 
     return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
   // Check for search parameter from URL on mount
@@ -197,7 +201,7 @@ const MembersPage = () => {
   useEffect(() => {
     // Keep results in sync when paging/filters change (works for both search and non-search)
     fetchCurrentPage();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     pagination.page,
     pagination.limit,
@@ -211,7 +215,7 @@ const MembersPage = () => {
     if (pagination.page !== 1) {
       setPagination((prev) => ({ ...prev, page: 1 }));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterWard, filterGender, filterRelation]);
 
   // Search filtering - now works on current page only
@@ -219,6 +223,31 @@ const MembersPage = () => {
     // No additional filtering needed - search is server-side
     return members;
   }, [members]);
+
+  // Group members by Mahal ID for collapsed display
+  // Each entry: { mid, primary, rest }
+  const groupedMembers = useMemo(() => {
+    const map = new Map();
+    for (const m of filteredMembers) {
+      const key = m.Mid ?? "";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(m);
+    }
+    return Array.from(map.entries()).map(([mid, group]) => ({
+      mid,
+      primary: group[0],
+      rest: group.slice(1),
+    }));
+  }, [filteredMembers]);
+
+  const toggleMid = (mid) => {
+    setExpandedMids((prev) => {
+      const next = new Set(prev);
+      if (next.has(mid)) next.delete(mid);
+      else next.add(mid);
+      return next;
+    });
+  };
 
   // Handle delete member
   const handleDelete = async (id, name) => {
@@ -229,8 +258,7 @@ const MembersPage = () => {
       toast.success("Member deleted successfully");
       fetchCurrentPage();
     } catch (error) {
-      console.error("Error deleting member:", error);
-      toast.error("Failed to delete member");
+      toast.error(getErrorMessage(error, "Failed to delete member"));
     }
   };
 
@@ -641,106 +669,167 @@ const MembersPage = () => {
                       </td>
                     </tr>
                   ) : (
-                    filteredMembers.map((member, index) => (
-                      <motion.tr
-                        key={member._id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="hover:bg-linear-to-r hover:from-[#E3F9F9]/20 hover:to-transparent transition-all duration-200 cursor-pointer group"
-                        onClick={() => handleViewDetails(member)}
-                      >
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          <span className="text-sm font-bold text-[#31757A] group-hover:text-[#41A4A7] transition-colors">
-                            {member.Mid}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <div className="shrink-0">
-                              <div className="h-10 w-10 rounded-full bg-linear-to-br from-[#31757A] to-[#41A4A7] flex items-center justify-center text-white font-bold shadow-md">
-                                {member.Fname?.charAt(0).toUpperCase()}
-                              </div>
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-gray-900 group-hover:text-[#1F2E2E]">
-                                {member.Fname}
-                              </div>
-                              {member.Aadhaar && (
-                                <div className="text-xs text-gray-500">
-                                  Aadhaar: {member.Aadhaar}
+                    groupedMembers.flatMap(
+                      ({ mid, primary, rest }, groupIndex) => {
+                        const isExpanded = expandedMids.has(mid);
+                        const hasMore = rest.length > 0;
+
+                        const renderRow = (member, isSubRow, rowIndex) => (
+                          <motion.tr
+                            key={member._id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -6 }}
+                            transition={{ delay: rowIndex * 0.04 }}
+                            className={cn(
+                              "transition-all duration-200 cursor-pointer group",
+                              isSubRow
+                                ? "bg-[#b2e8ea]/40 hover:bg-[#b2e8ea]/70 border-l-4 border-[#31757A]/60"
+                                : "hover:bg-linear-to-r hover:from-[#E3F9F9]/20 hover:to-transparent",
+                            )}
+                            onClick={() => handleViewDetails(member)}
+                          >
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              <span
+                                className={cn(
+                                  "text-sm font-bold transition-colors",
+                                  isSubRow
+                                    ? "text-[#31757A]/60 pl-2"
+                                    : "text-[#31757A] group-hover:text-[#41A4A7]",
+                                )}
+                              >
+                                {isSubRow ? "↳" : member.Mid}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              <div className="flex items-center gap-3">
+                                <div className="shrink-0">
+                                  <div
+                                    className={cn(
+                                      "h-10 w-10 rounded-full flex items-center justify-center text-white font-bold shadow-md",
+                                      isSubRow
+                                        ? "bg-linear-to-br from-[#41A4A7]/70 to-[#31757A]/70"
+                                        : "bg-linear-to-br from-[#31757A] to-[#41A4A7]",
+                                    )}
+                                  >
+                                    {member.Fname?.charAt(0).toUpperCase()}
+                                  </div>
                                 </div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          <Badge
-                            variant={
-                              member.Gender === "Male"
-                                ? "info"
-                                : member.Gender === "Female"
-                                  ? "warning"
-                                  : "default"
-                            }
-                            size="sm"
-                            className="font-semibold"
-                          >
-                            {member.Gender}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          <span className="text-sm text-gray-700 font-medium">
-                            {member.Relation || (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap">
-                          <span className="text-sm text-gray-900 font-medium">
-                            {member.Mobile || (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </span>
-                        </td>
-                        <td className="px-6 py-5">
-                          <div className="text-sm text-gray-700 max-w-xs truncate">
-                            {member.Address || (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
-                          <div
-                            className="flex items-center justify-end gap-2"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              leftIcon={<PencilIcon className="h-4 w-4" />}
-                              onClick={() =>
-                                navigate(`/admin/members/edit/${member._id}`)
-                              }
-                              className="text-[#31757A] hover:text-[#41A4A7] hover:bg-[#E3F9F9] border border-transparent hover:border-[#31757A] transition-all"
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              leftIcon={<TrashIcon className="h-4 w-4" />}
-                              onClick={() =>
-                                handleDelete(member._id, member.Fname)
-                              }
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all"
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-900 group-hover:text-[#1F2E2E]">
+                                    {member.Fname}
+                                  </div>
+                                  {member.Aadhaar && (
+                                    <div className="text-xs text-gray-500">
+                                      Aadhaar: {member.Aadhaar}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              <Badge
+                                variant={
+                                  member.Gender === "Male"
+                                    ? "info"
+                                    : member.Gender === "Female"
+                                      ? "warning"
+                                      : "default"
+                                }
+                                size="sm"
+                                className="font-semibold"
+                              >
+                                {member.Gender}
+                              </Badge>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              <span className="text-sm text-gray-700 font-medium">
+                                {member.Relation || (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              <span className="text-sm text-gray-900 font-medium">
+                                {member.Mobile || (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="text-sm text-gray-700 max-w-xs truncate">
+                                {member.Address || (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap text-right text-sm font-medium">
+                              <div
+                                className="flex items-center justify-end gap-2"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {!isSubRow && hasMore && (
+                                  <button
+                                    onClick={() => toggleMid(mid)}
+                                    title={
+                                      isExpanded
+                                        ? "Collapse household members"
+                                        : `Show ${rest.length} more member${rest.length > 1 ? "s" : ""}`
+                                    }
+                                    className={cn(
+                                      "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-all border",
+                                      isExpanded
+                                        ? "bg-[#31757A] text-white border-[#31757A]"
+                                        : "bg-[#E3F9F9] text-[#31757A] border-[#31757A]/30 hover:bg-[#31757A] hover:text-white hover:border-[#31757A]",
+                                    )}
+                                  >
+                                    <EyeIcon className="h-3.5 w-3.5" />
+                                    <span>+{rest.length}</span>
+                                    <ChevronDownIcon
+                                      className={cn(
+                                        "h-3 w-3 transition-transform duration-200",
+                                        isExpanded ? "rotate-180" : "",
+                                      )}
+                                    />
+                                  </button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  leftIcon={<PencilIcon className="h-4 w-4" />}
+                                  onClick={() =>
+                                    navigate(
+                                      `/admin/members/edit/${member._id}`,
+                                    )
+                                  }
+                                  className="text-[#31757A] hover:text-[#41A4A7] hover:bg-[#E3F9F9] border border-transparent hover:border-[#31757A] transition-all"
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  leftIcon={<TrashIcon className="h-4 w-4" />}
+                                  onClick={() =>
+                                    handleDelete(member._id, member.Fname)
+                                  }
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border border-transparent hover:border-red-200 transition-all"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        );
+
+                        return [
+                          renderRow(primary, false, groupIndex),
+                          ...(isExpanded
+                            ? rest.map((m, i) => renderRow(m, true, i))
+                            : []),
+                        ];
+                      },
+                    )
                   )}
                 </tbody>
               </table>

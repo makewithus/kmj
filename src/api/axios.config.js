@@ -65,9 +65,13 @@ const handleLogout = (message = "Session expired. Please login again.") => {
 // Request interceptor - Add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Only inject the main app token if the caller hasn't already provided one.
+    // Portal requests pass their own Bearer token and must not be overwritten.
+    if (!config.headers.Authorization) {
+      const token = localStorage.getItem("token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -92,6 +96,16 @@ api.interceptors.response.use(
 
     // Handle 401 Unauthorized - Token expired or invalid
     if (error.response?.status === 401) {
+      // Portal routes manage their own auth sessions — never redirect them to /login
+      const isPortalRoute = originalRequest?.url?.includes("/portal/");
+      if (isPortalRoute) {
+        return Promise.reject({
+          message: errorMessage,
+          errors: error.response?.data?.errors || [],
+          status: 401,
+        });
+      }
+
       // Check if it's a token-related error
       const isTokenError =
         errorMessage.toLowerCase().includes("token") ||
@@ -191,7 +205,10 @@ api.interceptors.response.use(
 
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
-      toast.error("You do not have permission to perform this action");
+      const isPortalRoute = originalRequest?.url?.includes("/portal/");
+      if (!isPortalRoute) {
+        toast.error("You do not have permission to perform this action");
+      }
     }
 
     return Promise.reject({
