@@ -259,6 +259,7 @@ export const REPORT_STATUS = [
 export const CERTIFICATE_TYPES = [
   { value: "Marriage", label: "Marriage Certificate" },
   { value: "Death", label: "Death Certificate" },
+  { value: "Admission", label: "Admission Certificate" },
   { value: "Transfer", label: "Transfer Certificate" },
 ];
 
@@ -274,7 +275,15 @@ export const ADMIN_NAV = [
   { label: "Land", path: "/admin/lands", icon: "MapPin" },
   { label: "Inventory", path: "/admin/inventory", icon: "Package" },
   { label: "Reports", path: "/admin/reports", icon: "AlertCircle" },
-  // { label: 'Certificates', path: '/admin/certificates', icon: 'Award' },
+  {
+    label: "Certificates",
+    path: "/admin/certificates",
+    icon: "Award",
+    children: CERTIFICATE_TYPES.map((type) => ({
+      label: type.label,
+      path: `/admin/certificates?type=${type.value}`,
+    })),
+  },
   { label: "Dashboard Access", path: "/admin/dashboard-access", icon: "Globe" },
 ];
 

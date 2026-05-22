@@ -16,6 +16,7 @@ import {
   PhoneIcon,
   ArchiveBoxIcon,
   DocumentTextIcon,
+  DocumentArrowDownIcon,
   Squares2X2Icon,
   PaintBrushIcon,
   EyeSlashIcon,
@@ -69,6 +70,16 @@ const MODULE_META = {
     label: "Lands",
     color: "from-green-500 to-green-600",
   },
+  certificates: {
+    icon: DocumentArrowDownIcon,
+    label: "Certificates",
+    color: "from-cyan-500 to-cyan-600",
+  },
+};
+
+const getAddLabel = (mod) => {
+  const label = MODULE_META[mod]?.label || mod;
+  return `Add ${label.replace(/s$/i, "")}`;
 };
 
 const ModuleCard = ({ mod, count, onClick, hidden }) => {
@@ -99,8 +110,16 @@ const ModuleCard = ({ mod, count, onClick, hidden }) => {
 const JamatDashboard = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { token, jamatName, enabledModules, settings, logout, updateSettings } =
-    useJamatAuth();
+  const {
+    token,
+    jamatName,
+    enabledModules,
+    amount,
+    paymentStatus,
+    settings,
+    logout,
+    updateSettings,
+  } = useJamatAuth();
 
   const [activeModule, setActiveModule] = useState(null);
   const [moduleData, setModuleData] = useState({});
@@ -314,9 +333,10 @@ const JamatDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" style={themeStyle}>
+    <div className="min-h-screen bg-gray-50 relative" style={themeStyle}>
+      <div className="fixed inset-0 z-0 pointer-events-none bg-linear-to-br from-[#E3F9F9]/30 via-transparent to-[#31757A]/10" />
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
+      <header className="bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
@@ -355,7 +375,7 @@ const JamatDashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <main className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {/* Welcome banner */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
@@ -373,6 +393,14 @@ const JamatDashboard = () => {
             {visibleModules.length} module
             {visibleModules.length !== 1 ? "s" : ""} active
           </p>
+          {Number(amount || 0) > 0 && (
+            <div className="mt-4 inline-flex flex-wrap items-center gap-3 rounded-xl bg-white/15 px-4 py-2 text-sm">
+              <span>Payment due: ₹{Number(amount).toLocaleString("en-IN")}</span>
+              <span className="capitalize opacity-80">
+                {String(paymentStatus).replace(/_/g, " ")}
+              </span>
+            </div>
+          )}
         </motion.div>
 
         {/* Module grid */}
@@ -420,7 +448,7 @@ const JamatDashboard = () => {
                 style={{ background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})` }}
               >
                 <PlusIcon className="h-4 w-4" />
-                <span className="hidden sm:inline">Add Item</span>
+                <span className="hidden sm:inline">{getAddLabel(activeModule)}</span>
               </button>
             </div>
 
@@ -872,7 +900,7 @@ const JamatDashboard = () => {
                     background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})`,
                   }}
                 >
-                  {addingItem ? "Adding…" : "Add Item"}
+                  {addingItem ? "Adding…" : getAddLabel(activeModule)}
                 </button>
               </div>
             </motion.div>

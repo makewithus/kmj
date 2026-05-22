@@ -110,7 +110,7 @@ const PublicLayout = () => {
 
           <div className="pt-8 border-t border-white/10 text-center text-white/50">
             <p className="text-xs sm:text-sm wrap-break-word">
-              &copy; 2025 Kalloor Masjid Jama-ath. All rights reserved.
+              &copy; 2026 Kalloor Masjid Jama-ath. All rights reserved.
             </p>
 
             <p className="text-xs sm:text-sm mt-2 text-white/40">

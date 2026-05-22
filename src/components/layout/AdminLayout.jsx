@@ -4,8 +4,9 @@
  */
 
 import { useState, useEffect, useRef } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Menu, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import {
@@ -48,6 +49,7 @@ import {
 const AdminLayout = ({ children, className }) => {
   const { user, logout, isAdmin } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -513,47 +515,63 @@ const AdminLayout = ({ children, className }) => {
         <nav className="p-4 space-y-2 overflow-y-auto h-[calc(100%)]">
           {navigation.map((item) => {
             const Icon = iconMap[item.icon];
+            const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+            const isParentActive = location.pathname === item.path;
             return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  cn(
-                    "group flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200",
-                    sidebarCollapsed ? "justify-center px-4 py-3" : "px-4 py-3",
-                    isActive
-                      ? "bg-linear-to-r from-[#31757A] to-[#41A4A7] text-white shadow-lg shadow-[#31757A]/30"
-                      : "text-gray-700 hover:bg-[#E3F9F9] hover:text-[#1F2E2E]",
-                  )
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <Icon
-                      className={cn(
-                        "h-5 w-5 shrink-0",
-                        isActive
-                          ? "text-white"
-                          : "text-gray-600 group-hover:text-[#31757A]",
-                      )}
-                    />
-                    {!sidebarCollapsed && (
-                      <span className="truncate">{item.label}</span>
-                    )}
-                    {isActive && !sidebarCollapsed && (
-                      <motion.div
-                        layoutId="activeSidebarTab"
-                        className="ml-auto w-1.5 h-1.5 rounded-full bg-white"
-                        transition={{
-                          type: "spring",
-                          stiffness: 300,
-                          damping: 30,
-                        }}
+              <div key={item.path}>
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) =>
+                    cn(
+                      "group flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200",
+                      sidebarCollapsed ? "justify-center px-4 py-3" : "px-4 py-3",
+                      isActive
+                        ? "bg-linear-to-r from-[#31757A] to-[#41A4A7] text-white shadow-lg shadow-[#31757A]/30"
+                        : "text-gray-700 hover:bg-[#E3F9F9] hover:text-[#1F2E2E]",
+                    )
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <Icon
+                        className={cn(
+                          "h-5 w-5 shrink-0",
+                          isActive
+                            ? "text-white"
+                            : "text-gray-600 group-hover:text-[#31757A]",
+                        )}
                       />
-                    )}
-                  </>
+                      {!sidebarCollapsed && (
+                        <span className="truncate">{item.label}</span>
+                      )}
+                      {isActive && !sidebarCollapsed && (
+                        <motion.div
+                          layoutId="activeSidebarTab"
+                          className="ml-auto w-1.5 h-1.5 rounded-full bg-white"
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                          }}
+                        />
+                      )}
+                    </>
+                  )}
+                </NavLink>
+                {hasChildren && isParentActive && !sidebarCollapsed && (
+                  <div className="ml-8 mt-1 space-y-1">
+                    {item.children.map((child) => (
+                      <NavLink
+                        key={child.path}
+                        to={child.path}
+                        className="block rounded-lg px-3 py-2 text-xs font-medium text-gray-600 hover:bg-[#E3F9F9] hover:text-[#31757A]"
+                      >
+                        {child.label}
+                      </NavLink>
+                    ))}
+                  </div>
                 )}
-              </NavLink>
+              </div>
             );
           })}
         </nav>
@@ -626,22 +644,39 @@ const AdminLayout = ({ children, className }) => {
                 {navigation.map((item) => {
                   const Icon = iconMap[item.icon];
                   return (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={({ isActive }) =>
-                        cn(
-                          "group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
-                          isActive
-                            ? "bg-linear-to-r from-[#31757A] to-[#41A4A7] text-white shadow-lg shadow-[#31757A]/30"
-                            : "text-gray-700 hover:bg-[#E3F9F9] hover:text-[#1F2E2E]",
-                        )
-                      }
-                    >
-                      <Icon className="h-5 w-5 shrink-0" />
-                      <span>{item.label}</span>
-                    </NavLink>
+                    <div key={item.path}>
+                      <NavLink
+                        to={item.path}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={({ isActive }) =>
+                          cn(
+                            "group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
+                            isActive
+                              ? "bg-linear-to-r from-[#31757A] to-[#41A4A7] text-white shadow-lg shadow-[#31757A]/30"
+                              : "text-gray-700 hover:bg-[#E3F9F9] hover:text-[#1F2E2E]",
+                          )
+                        }
+                      >
+                        <Icon className="h-5 w-5 shrink-0" />
+                        <span>{item.label}</span>
+                      </NavLink>
+                      {Array.isArray(item.children) &&
+                        item.children.length > 0 &&
+                        location.pathname === item.path && (
+                          <div className="ml-8 mt-1 space-y-1">
+                            {item.children.map((child) => (
+                              <NavLink
+                                key={child.path}
+                                to={child.path}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="block rounded-lg px-3 py-2 text-xs font-medium text-gray-600 hover:bg-[#E3F9F9] hover:text-[#31757A]"
+                              >
+                                {child.label}
+                              </NavLink>
+                            ))}
+                          </div>
+                        )}
+                    </div>
                   );
                 })}
               </nav>

@@ -21,7 +21,7 @@ const useAuthStore = create(
 
       // Actions
       setUser: (user) => set({ user, isAuthenticated: !!user }),
-      setHydrated: () => set({ _hydrated: true }),
+      setHydrated: () => set({ _hydrated: false, isAuthenticated: false }),
 
       setToken: (token) => {
         if (token) {
@@ -30,6 +30,21 @@ const useAuthStore = create(
           localStorage.removeItem("token");
         }
         set({ token });
+      },
+
+      clearAuthState: () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+        localStorage.removeItem("auth-storage");
+        delete axiosInstance.defaults.headers.common["Authorization"];
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
       },
 
       login: async (credentials) => {
@@ -102,16 +117,7 @@ const useAuthStore = create(
         } catch (error) {
           console.error("Logout error:", error);
         } finally {
-          set({
-            user: null,
-            token: null,
-            isAuthenticated: false,
-            error: null,
-          });
-          localStorage.removeItem("token");
-          localStorage.removeItem("refreshToken");
-          localStorage.removeItem("user");
-          delete axiosInstance.defaults.headers.common["Authorization"];
+          get().clearAuthState();
         }
       },
 
@@ -131,7 +137,7 @@ const useAuthStore = create(
             `Bearer ${token}`;
 
           return true;
-        } catch (error) {
+        } catch {
           get().logout();
           return false;
         }
@@ -184,22 +190,40 @@ const useAuthStore = create(
       },
 
       // Initialize auth from localStorage
-      initAuth: () => {
+      initAuth: async () => {
         const token = localStorage.getItem("token");
         const userStr = localStorage.getItem("user");
 
-        if (token && userStr) {
-          try {
-            const user = JSON.parse(userStr);
-            set({
-              user,
-              token,
-              isAuthenticated: true,
-            });
-          } catch (error) {
-            console.error("Failed to parse user data:", error);
-            get().logout();
-          }
+        if (!token || !userStr) {
+          get().clearAuthState();
+          set({ _hydrated: true });
+          return;
+        }
+
+        try {
+          JSON.parse(userStr);
+          axiosInstance.defaults.headers.common["Authorization"] =
+            `Bearer ${token}`;
+          set({ isLoading: true, token });
+
+          const response = await authAPI.getCurrentUser();
+          const user = response.data?.user;
+
+          if (!user) throw new Error("Invalid session");
+
+          localStorage.setItem("user", JSON.stringify(user));
+          set({
+            user,
+            token,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+            _hydrated: true,
+          });
+        } catch (error) {
+          console.error("Stored login session is no longer valid:", error);
+          get().clearAuthState();
+          set({ _hydrated: true });
         }
       },
     }),
@@ -211,7 +235,6 @@ const useAuthStore = create(
       partialize: (state) => ({
         user: state.user,
         token: state.token,
-        isAuthenticated: state.isAuthenticated,
       }),
     },
   ),

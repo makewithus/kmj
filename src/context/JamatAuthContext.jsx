@@ -14,7 +14,7 @@ import {
 } from "react";
 
 const getSessionKey = (slug) => `jamat_session_${slug}`;
-const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
+const INACTIVITY_MS = 10 * 60 * 1000; // 10 minutes
 
 const JamatAuthContext = createContext(null);
 
@@ -66,6 +66,8 @@ export const JamatAuthProvider = ({ children, slug }) => {
         slug: data.slug,
         jamatName: data.jamatName,
         enabledModules: data.enabledModules,
+        amount: data.amount || 0,
+        paymentStatus: data.paymentStatus || "not_required",
         settings: data.settings || {},
         loginAt: Date.now(),
       };
@@ -100,6 +102,8 @@ export const JamatAuthProvider = ({ children, slug }) => {
         slug: session?.slug ?? slug,
         jamatName: session?.jamatName ?? null,
         enabledModules: session?.enabledModules ?? [],
+        amount: session?.amount ?? 0,
+        paymentStatus: session?.paymentStatus ?? "not_required",
         settings: session?.settings ?? {},
         login,
         logout,

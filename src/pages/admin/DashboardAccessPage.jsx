@@ -40,6 +40,7 @@ const ALL_MODULES = [
   { id: "lands", label: "Lands" },
   { id: "bills", label: "Bills" },
   { id: "reports", label: "Reports" },
+  { id: "certificates", label: "Certificates" },
 ];
 
 const generatePassword = () => {
@@ -115,8 +116,8 @@ const DashboardAccessPage = () => {
                 ...p,
                 credentials: {
                   username: updated?.username || editForm.username,
-                  plainPassword: editForm.newPassword,
                 },
+                credentialsUpdatedAt: new Date().toISOString(),
               }
             : p,
         ),
@@ -136,7 +137,8 @@ const DashboardAccessPage = () => {
     jamatName: "",
     username: "",
     password: "",
-    enabledModules: [],
+    amount: "",
+    enabledModules: ["members"],
   });
   const [errors, setErrors] = useState({});
 
@@ -184,13 +186,15 @@ const DashboardAccessPage = () => {
         jamatName: form.jamatName,
         username: form.username,
         password: form.password,
+        amount: form.amount,
         loginUrl: `${window.location.origin}/${slug}/login`,
       });
       setForm({
         jamatName: "",
         username: "",
         password: "",
-        enabledModules: [],
+        amount: "",
+        enabledModules: ["members"],
       });
       setShowForm(false);
       fetchPortals();
@@ -213,6 +217,10 @@ const DashboardAccessPage = () => {
   };
 
   const toggleModule = (id) => {
+    if (id === "members" && form.enabledModules.includes(id)) {
+      toast.error("Members should remain enabled for every Jamat portal.");
+      return;
+    }
     setForm((p) => ({
       ...p,
       enabledModules: p.enabledModules.includes(id)
@@ -276,6 +284,12 @@ const DashboardAccessPage = () => {
                   { label: "Portal URL", value: createdCreds.loginUrl },
                   { label: "Username", value: createdCreds.username },
                   { label: "Password", value: createdCreds.password },
+                  {
+                    label: "Payment Amount",
+                    value: createdCreds.amount
+                      ? `₹${Number(createdCreds.amount).toLocaleString("en-IN")}`
+                      : "No payment required",
+                  },
                 ].map(({ label, value }) => (
                   <div key={label}>
                     <p className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">
@@ -410,42 +424,63 @@ const DashboardAccessPage = () => {
                 </div>
 
                 {/* Password */}
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                    Password <span className="text-red-500">*</span>
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Min 6 characters"
-                      value={form.password}
-                      onChange={(e) => {
-                        setForm((p) => ({ ...p, password: e.target.value }));
-                        if (errors.password)
-                          setErrors((p) => ({ ...p, password: "" }));
-                      }}
-                      className={`flex-1 px-4 py-2.5 border-2 rounded-xl text-sm outline-none transition-all font-mono
-                        ${errors.password ? "border-red-400" : "border-gray-200 focus:border-[#31757A]"}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const pwd = generatePassword();
-                        setForm((p) => ({ ...p, password: pwd }));
-                        if (errors.password)
-                          setErrors((p) => ({ ...p, password: "" }));
-                      }}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-[#E3F9F9] text-[#31757A] font-semibold text-sm rounded-xl hover:bg-[#31757A] hover:text-white transition-all border-2 border-[#31757A]/20 whitespace-nowrap"
-                    >
-                      <ArrowPathIcon className="h-4 w-4" />
-                      Auto Generate
-                    </button>
+                <div className="grid sm:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Min 6 characters"
+                        value={form.password}
+                        onChange={(e) => {
+                          setForm((p) => ({ ...p, password: e.target.value }));
+                          if (errors.password)
+                            setErrors((p) => ({ ...p, password: "" }));
+                        }}
+                        className={`flex-1 px-4 py-2.5 border-2 rounded-xl text-sm outline-none transition-all font-mono
+                          ${errors.password ? "border-red-400" : "border-gray-200 focus:border-[#31757A]"}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const pwd = generatePassword();
+                          setForm((p) => ({ ...p, password: pwd }));
+                          if (errors.password)
+                            setErrors((p) => ({ ...p, password: "" }));
+                        }}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-[#E3F9F9] text-[#31757A] font-semibold text-sm rounded-xl hover:bg-[#31757A] hover:text-white transition-all border-2 border-[#31757A]/20 whitespace-nowrap"
+                      >
+                        <ArrowPathIcon className="h-4 w-4" />
+                        Auto
+                      </button>
+                    </div>
+                    {errors.password && (
+                      <p className="text-xs text-red-500 mt-1">
+                        {errors.password}
+                      </p>
+                    )}
                   </div>
-                  {errors.password && (
-                    <p className="text-xs text-red-500 mt-1">
-                      {errors.password}
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                      Portal Payment Amount
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Amount for Razorpay / QR"
+                      value={form.amount}
+                      onChange={(e) =>
+                        setForm((p) => ({ ...p, amount: e.target.value }))
+                      }
+                      className="w-full px-4 py-2.5 border-2 rounded-xl text-sm outline-none transition-all border-gray-200 focus:border-[#31757A]"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">
+                      This amount will be payable from the created Jamat portal.
                     </p>
-                  )}
+                  </div>
                 </div>
 
                 {/* Modules checkboxes */}
@@ -610,7 +645,7 @@ const DashboardAccessPage = () => {
                           </span>
                           <code className="text-xs text-gray-700 font-mono">
                             {revealedSlugs[portal.slug]
-                              ? portal.credentials?.plainPassword || "—"
+                              ? "Hidden for security"
                               : "••••••••"}
                           </code>
                           <button
@@ -625,11 +660,40 @@ const DashboardAccessPage = () => {
                             )}
                           </button>
                           {revealedSlugs[portal.slug] && (
-                            <CopyButton
-                              text={portal.credentials?.plainPassword || ""}
-                            />
+                            <span className="text-[11px] text-gray-400">
+                              Reset to issue a new password
+                            </span>
                           )}
                         </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-500">
+                        <span className="font-medium text-gray-400">
+                          Amount:
+                        </span>
+                        <span className="font-semibold text-[#31757A]">
+                          {portal.amount
+                            ? `₹${Number(portal.amount).toLocaleString("en-IN")}`
+                            : "No payment required"}
+                        </span>
+                        <span className="text-gray-300">•</span>
+                        <span className="capitalize">
+                          {String(portal.paymentStatus || "not_required").replace(
+                            /_/g,
+                            " ",
+                          )}
+                        </span>
+                        {portal.credentialsUpdatedAt && (
+                          <>
+                            <span className="text-gray-300">•</span>
+                            <span>
+                              Password updated{" "}
+                              {new Date(
+                                portal.credentialsUpdatedAt,
+                              ).toLocaleDateString("en-IN")}
+                            </span>
+                          </>
+                        )}
                       </div>
 
                       <div className="flex flex-wrap gap-1 mt-1.5">

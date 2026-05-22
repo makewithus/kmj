@@ -292,14 +292,14 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* <Route
-          path="/admin/certificates"
-          element={
-            <ProtectedRoute requireAdmin>
-              <CertificatesPage />
-            </ProtectedRoute>
-          }
-        /> */}
+          <Route
+            path="/admin/certificates"
+            element={
+              <ProtectedRoute requireAdmin>
+                <CertificatesPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/admin/profile"
             element={
