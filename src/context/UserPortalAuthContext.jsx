@@ -2,6 +2,9 @@
  * UserPortalAuthContext
  * Manages session state for the member/house-owner portal.
  * Stored in sessionStorage — isolated from main app auth.
+ *
+ * Security: On app init, the stored token is validated server-side
+ * before isAuthenticated is set to true.
  */
 
 import {
@@ -12,21 +15,32 @@ import {
   useCallback,
   useRef,
 } from "react";
+import axiosInstance from "../api/axios.config";
 
 const SESSION_KEY = "up_session";
 const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
 
 const UserPortalAuthContext = createContext(null);
 
+/**
+ * Validate the user portal JWT with the server by calling a protected endpoint.
+ * Returns true if the token is still valid.
+ */
+const verifyUserPortalToken = async (token) => {
+  try {
+    await axiosInstance.get("/portal/user/family", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const UserPortalAuthProvider = ({ children }) => {
-  const [session, setSession] = useState(() => {
-    try {
-      const raw = sessionStorage.getItem(SESSION_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  });
+  // Start unauthenticated — we verify before granting access
+  const [session, setSession] = useState(null);
+  const [isVerifying, setIsVerifying] = useState(true);
 
   const inactivityTimer = useRef(null);
 
@@ -40,6 +54,53 @@ export const UserPortalAuthProvider = ({ children }) => {
     clearTimeout(inactivityTimer.current);
     inactivityTimer.current = setTimeout(clearSession, INACTIVITY_MS);
   }, [clearSession]);
+
+  /**
+   * On mount: check sessionStorage for a saved session and verify
+   * its JWT token with the server before allowing access.
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    const initSession = async () => {
+      try {
+        const raw = sessionStorage.getItem(SESSION_KEY);
+        if (!raw) {
+          if (!cancelled) setIsVerifying(false);
+          return;
+        }
+
+        const parsed = JSON.parse(raw);
+
+        // Basic structure check
+        if (!parsed?.token || typeof parsed.token !== "string") {
+          sessionStorage.removeItem(SESSION_KEY);
+          if (!cancelled) setIsVerifying(false);
+          return;
+        }
+
+        // Server-side token verification
+        const valid = await verifyUserPortalToken(parsed.token);
+        if (cancelled) return;
+
+        if (valid) {
+          setSession(parsed);
+        } else {
+          // Stale / revoked token — remove session
+          sessionStorage.removeItem(SESSION_KEY);
+        }
+      } catch {
+        sessionStorage.removeItem(SESSION_KEY);
+      } finally {
+        if (!cancelled) setIsVerifying(false);
+      }
+    };
+
+    initSession();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Track activity to reset timeout
   useEffect(() => {
@@ -57,6 +118,10 @@ export const UserPortalAuthProvider = ({ children }) => {
 
   const login = useCallback(
     (data) => {
+      if (!data?.token || typeof data.token !== "string") {
+        console.error("[UserPortalAuth] login() called without a valid token");
+        return;
+      }
       const newSession = {
         token: data.token,
         member: data.member,
@@ -76,7 +141,8 @@ export const UserPortalAuthProvider = ({ children }) => {
   return (
     <UserPortalAuthContext.Provider
       value={{
-        isAuthenticated: !!session?.token,
+        isAuthenticated: !isVerifying && !!session?.token,
+        isVerifying,
         token: session?.token ?? null,
         member: session?.member ?? null,
         login,
