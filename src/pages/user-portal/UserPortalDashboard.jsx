@@ -92,6 +92,11 @@ const MemberCard = memo(({ member, isOwner }) => (
             </span>
           )}
         </div>
+        {Number(member.pendingAmount || 0) > 0 && (
+          <div className="mt-3 flex items-center gap-1.5 text-xs text-red-600 font-semibold bg-red-50 border border-red-100 rounded-lg px-2.5 py-1.5 w-fit">
+            <span>Pending Fine / Amount: ₹{Number(member.pendingAmount).toLocaleString("en-IN")}</span>
+          </div>
+        )}
       </div>
     </div>
   </motion.div>
@@ -105,6 +110,10 @@ const UserPortalDashboard = () => {
 
   // Memoize owner id comparison to avoid re-computing on every render
   const ownerMemberId = useMemo(() => owner?.id ?? "", [owner?.id]);
+
+  const totalPending = useMemo(() => {
+    return members.reduce((sum, m) => sum + (Number(m.pendingAmount) || 0), 0);
+  }, [members]);
 
   const fetchFamily = useCallback(async () => {
     setLoading(true);
@@ -180,6 +189,11 @@ const UserPortalDashboard = () => {
             Address: {owner?.address || "—"} &nbsp;·&nbsp; Mahal ID:{" "}
             {owner?.mahalId}
           </p>
+          {totalPending > 0 && (
+            <div className="mt-4 inline-flex items-center gap-2 bg-yellow-500/25 border border-yellow-400/40 rounded-xl px-4 py-2 text-sm text-yellow-100 font-semibold shadow-inner">
+              <span>⚠️ Notice: Outstanding Fine/Pending Amount: ₹{totalPending.toLocaleString("en-IN")}</span>
+            </div>
+          )}
         </motion.div>
 
         {/* Family members section */}

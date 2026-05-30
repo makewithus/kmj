@@ -18,7 +18,7 @@ import {
 import axiosInstance from "../api/axios.config";
 
 const SESSION_KEY = "up_session";
-const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
+const INACTIVITY_MS = 10 * 60 * 1000; // 10 minutes
 
 const UserPortalAuthContext = createContext(null);
 

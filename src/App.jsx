@@ -29,6 +29,7 @@ const JamatDashboard = lazy(() => import("./pages/jamat/JamatDashboard"));
 const DashboardAccessPage = lazy(
   () => import("./pages/admin/DashboardAccessPage"),
 );
+const FinancePage = lazy(() => import("./pages/admin/FinancePage"));
 
 const PortalSuspense = ({ children }) => (
   <Suspense
@@ -257,6 +258,16 @@ function App() {
             element={
               <ProtectedRoute requireAdmin>
                 <VouchersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/finance"
+            element={
+              <ProtectedRoute requireAdmin>
+                <PortalSuspense>
+                  <FinancePage />
+                </PortalSuspense>
               </ProtectedRoute>
             }
           />

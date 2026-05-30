@@ -271,6 +271,7 @@ export const ADMIN_NAV = [
   { label: "Bills", path: "/admin/bills", icon: "Receipt" },
   { label: "Notices", path: "/admin/notices", icon: "Megaphone" },
   { label: "Vouchers", path: "/admin/vouchers", icon: "FileText" },
+  { label: "Finance", path: "/admin/finance", icon: "DollarSign" },
   { label: "Contacts", path: "/admin/contacts", icon: "Users" },
   { label: "Land", path: "/admin/lands", icon: "MapPin" },
   { label: "Inventory", path: "/admin/inventory", icon: "Package" },

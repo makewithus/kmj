@@ -101,7 +101,17 @@ const CertificatesPage = () => {
 
   const fields = useMemo(() => detailFields[type] || [], [type]);
   const title = getTypeLabel(type);
-  const body = certificateBody(type, name, details);
+  const defaultBody = useMemo(() => certificateBody(type, name, details), [type, name, details]);
+  const displayBody = details.customBody !== undefined ? details.customBody : defaultBody;
+
+  // Reset customBody when type or name changes
+  useEffect(() => {
+    setDetails((prev) => {
+      if (prev.customBody === undefined) return prev;
+      const { customBody, ...rest } = prev;
+      return rest;
+    });
+  }, [type, name]);
 
   const handleTypeChange = (value) => {
     setType(value);
@@ -117,7 +127,9 @@ const CertificatesPage = () => {
 
     setSaving(true);
     try {
-      await certificateService.create({ type, name: name.trim(), details });
+      // Include the potentially edited custom body in the details object saved to server
+      const payloadDetails = { ...details, customBody: displayBody };
+      await certificateService.create({ type, name: name.trim(), details: payloadDetails });
       toast.success("Certificate saved successfully");
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to save certificate"));
@@ -261,7 +273,35 @@ const CertificatesPage = () => {
             <h2 className="mt-8 text-3xl font-bold text-[#1F2E2E]">{title}</h2>
             <div className="mx-auto mt-3 h-1 w-24 rounded-full bg-linear-to-r from-[#31757A] to-[#41A4A7]" />
 
-            <p className="mt-14 text-lg leading-9 text-gray-700">{body}</p>
+            {/* Editable body content for screen view, static print-ready view for printing */}
+            <div className="mt-14 print:hidden flex flex-col items-center">
+              <label className="text-xs text-gray-400 mb-1">Click below to edit certificate content directly:</label>
+              <textarea
+                value={displayBody}
+                onChange={(event) =>
+                  setDetails((prev) => ({
+                    ...prev,
+                    customBody: event.target.value,
+                  }))
+                }
+                rows={6}
+                className="w-full border-2 border-dashed border-gray-200 hover:border-[#31757A] focus:border-[#31757A] focus:ring-0 rounded-2xl p-4 text-lg leading-9 text-gray-700 text-center transition-all bg-[#F9FBFB] outline-none resize-none font-sans"
+                placeholder="Click here to edit the certificate body text..."
+              />
+              <button
+                type="button"
+                onClick={() => setDetails((prev) => {
+                  const { customBody, ...rest } = prev;
+                  return rest;
+                })}
+                className="mt-3 text-xs text-[#31757A] hover:underline font-semibold"
+              >
+                Reset to default template
+              </button>
+            </div>
+            <p className="hidden print:block mt-14 text-lg leading-9 text-gray-700 whitespace-pre-line">
+              {displayBody}
+            </p>
 
             {details.notes && (
               <p className="mt-8 rounded-xl bg-gray-50 px-5 py-4 text-sm text-gray-600">

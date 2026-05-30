@@ -32,6 +32,7 @@ import {
   Award,
   User,
   Globe,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ADMIN_NAV, USER_NAV } from "../../lib/constants";
@@ -121,6 +122,7 @@ const AdminLayout = ({ children, className }) => {
     Award,
     User,
     Globe,
+    DollarSign,
   };
 
   const handleLogout = async () => {
