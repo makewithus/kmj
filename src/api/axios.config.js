@@ -37,10 +37,10 @@ const handleLogout = (message = "Session expired. Please login again.") => {
   console.log("🚪 Logging out user:", message);
 
   // Clear all auth data
-  localStorage.removeItem("token");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("user");
-  localStorage.removeItem("auth-storage");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("refreshToken");
+  sessionStorage.removeItem("user");
+  sessionStorage.removeItem("auth-storage");
 
   // Clear axios default headers
   delete api.defaults.headers.common["Authorization"];
@@ -64,7 +64,7 @@ api.interceptors.request.use(
     // Only inject the main app token if the caller hasn't already provided one.
     // Portal requests pass their own Bearer token and must not be overwritten.
     if (!config.headers.Authorization) {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -138,7 +138,7 @@ api.interceptors.response.use(
         originalRequest._retry = true;
         isRefreshing = true;
 
-        const refreshToken = localStorage.getItem("refreshToken");
+        const refreshToken = sessionStorage.getItem("refreshToken");
 
         if (!refreshToken) {
           // No refresh token, logout
@@ -164,8 +164,8 @@ api.interceptors.response.use(
           console.log("✅ Token refresh successful");
 
           // Store new tokens
-          localStorage.setItem("token", newToken);
-          localStorage.setItem("refreshToken", newRefreshToken);
+          sessionStorage.setItem("token", newToken);
+          sessionStorage.setItem("refreshToken", newRefreshToken);
 
           // Update authorization header
           api.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;

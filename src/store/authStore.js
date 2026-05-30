@@ -6,7 +6,7 @@
  */
 
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { authAPI } from "../services/api.service";
 import axiosInstance from "../api/axios.config";
 
@@ -66,18 +66,18 @@ const useAuthStore = create(
 
       setToken: (token) => {
         if (token) {
-          localStorage.setItem("token", token);
+          sessionStorage.setItem("token", token);
         } else {
-          localStorage.removeItem("token");
+          sessionStorage.removeItem("token");
         }
         set({ token });
       },
 
       clearAuthState: () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
-        localStorage.removeItem("auth-storage");
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("refreshToken");
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("auth-storage");
         delete axiosInstance.defaults.headers.common["Authorization"];
         set({
           user: null,
@@ -108,9 +108,9 @@ const useAuthStore = create(
             error: null,
           });
 
-          localStorage.setItem("token", token);
-          if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
-          localStorage.setItem("user", JSON.stringify(user));
+          sessionStorage.setItem("token", token);
+          if (refreshToken) sessionStorage.setItem("refreshToken", refreshToken);
+          sessionStorage.setItem("user", JSON.stringify(user));
           axiosInstance.defaults.headers.common[
             "Authorization"
           ] = `Bearer ${token}`;
@@ -170,7 +170,7 @@ const useAuthStore = create(
 
       refreshToken: async () => {
         try {
-          const storedRefreshToken = localStorage.getItem("refreshToken");
+          const storedRefreshToken = sessionStorage.getItem("refreshToken");
           if (!storedRefreshToken) return false;
 
           // Check if refresh token itself is expired before making a call
@@ -185,8 +185,8 @@ const useAuthStore = create(
           if (!token) return false;
 
           set({ token });
-          localStorage.setItem("token", token);
-          if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+          sessionStorage.setItem("token", token);
+          if (refreshToken) sessionStorage.setItem("refreshToken", refreshToken);
           axiosInstance.defaults.headers.common[
             "Authorization"
           ] = `Bearer ${token}`;
@@ -204,7 +204,7 @@ const useAuthStore = create(
           const response = await authAPI.updateProfile(data);
           const updatedUser = response.data.user;
           set({ user: updatedUser, isLoading: false, error: null });
-          localStorage.setItem("user", JSON.stringify(updatedUser));
+          sessionStorage.setItem("user", JSON.stringify(updatedUser));
           return { success: true, user: updatedUser };
         } catch (error) {
           const errorMessage =
@@ -245,7 +245,7 @@ const useAuthStore = create(
        *  3. If the server rejects the token for any reason, we clear all state.
        */
       initAuth: async () => {
-        const token = localStorage.getItem("token");
+        const token = sessionStorage.getItem("token");
 
         // No token stored — clear everything and mark as ready
         if (!token) {
@@ -263,7 +263,7 @@ const useAuthStore = create(
             return;
           }
           // After refresh, re-read the new token
-          const newToken = localStorage.getItem("token");
+          const newToken = sessionStorage.getItem("token");
           if (!newToken) {
             set({ _hydrated: true });
             return;
@@ -271,7 +271,7 @@ const useAuthStore = create(
         }
 
         try {
-          const freshToken = localStorage.getItem("token");
+          const freshToken = sessionStorage.getItem("token");
           axiosInstance.defaults.headers.common[
             "Authorization"
           ] = `Bearer ${freshToken}`;
@@ -283,7 +283,7 @@ const useAuthStore = create(
 
           if (!user) throw new Error("Server returned no user");
 
-          localStorage.setItem("user", JSON.stringify(user));
+          sessionStorage.setItem("user", JSON.stringify(user));
           set({
             user,
             token: freshToken,
@@ -304,8 +304,9 @@ const useAuthStore = create(
     }),
     {
       name: "auth-storage",
+      storage: createJSONStorage(() => sessionStorage),
       onRehydrateStorage: () => (state) => {
-        // After localStorage data is loaded, immediately reset isAuthenticated.
+        // After sessionStorage data is loaded, immediately reset isAuthenticated.
         // initAuth() will set it back to true only after server validation.
         if (state) state.setHydrated();
       },
