@@ -1,14 +1,10 @@
-/**
- * Axios Configuration
- * API client setup with interceptors and automatic token refresh
- */
 
 import axios from "axios";
 import { API_BASE_URL } from "../lib/constants";
 import toast from "react-hot-toast";
 import { attachQuotaGuard } from "./quotaGuard";
 
-// Create axios instance
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
