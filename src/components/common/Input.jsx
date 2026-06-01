@@ -53,6 +53,7 @@ const Input = forwardRef(
               className
             )}
             {...props}
+            value={props.value ?? ''}
           />
           
           {rightIcon && (

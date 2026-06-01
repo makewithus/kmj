@@ -102,7 +102,10 @@ const CertificatesPage = () => {
   const fields = useMemo(() => detailFields[type] || [], [type]);
   const title = getTypeLabel(type);
   const defaultBody = useMemo(() => certificateBody(type, name, details), [type, name, details]);
-  const displayBody = details.customBody !== undefined ? details.customBody : defaultBody;
+  const displayBody = useMemo(() => {
+    const rawBody = details.customBody !== undefined ? details.customBody : defaultBody;
+    return rawBody.replace(/-/g, "\u2011");
+  }, [details.customBody, defaultBody]);
 
   // Reset customBody when type or name changes
   useEffect(() => {

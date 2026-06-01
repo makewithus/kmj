@@ -82,7 +82,7 @@ const getAddLabel = (mod) => {
   return `Add ${label.replace(/s$/i, "")}`;
 };
 
-const ModuleCard = ({ mod, count, onClick, hidden }) => {
+const ModuleCard = ({ mod, count, onClick, hidden, locked }) => {
   const meta = MODULE_META[mod] || {
     icon: DocumentTextIcon,
     label: mod,
@@ -93,7 +93,7 @@ const ModuleCard = ({ mod, count, onClick, hidden }) => {
     <motion.div
       whileHover={{ scale: 1.02 }}
       onClick={onClick}
-      className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer p-5 ${hidden ? "opacity-50" : ""}`}
+      className={`bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all p-5 ${hidden ? "opacity-50" : ""} ${locked ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
     >
       <div
         className={`w-12 h-12 bg-linear-to-br ${meta.color} rounded-xl flex items-center justify-center mb-4`}
@@ -103,6 +103,11 @@ const ModuleCard = ({ mod, count, onClick, hidden }) => {
       <h4 className="font-semibold text-gray-900">{meta.label}</h4>
       <p className="text-2xl font-bold text-gray-800 mt-1">{count}</p>
       <p className="text-xs text-gray-400 mt-0.5">items</p>
+      {locked && (
+        <span className="mt-3 inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-600">
+          Payment required
+        </span>
+      )}
     </motion.div>
   );
 };
@@ -154,6 +159,16 @@ const JamatDashboard = () => {
     [enabledModules, hiddenModules],
   );
 
+  const paymentRequired = Number(amount || 0) > 0;
+  const paymentSettled = ["paid", "completed", "success", "not_required"].includes(
+    String(paymentStatus || "").toLowerCase(),
+  );
+  const isModuleLocked = useCallback(
+    (mod) =>
+      paymentRequired && !paymentSettled && ["members", "assigned"].includes(mod),
+    [paymentRequired, paymentSettled],
+  );
+
   const fetchModuleData = useCallback(
     async (mod) => {
       if (moduleData[mod]) return; // cached
@@ -187,6 +202,10 @@ const JamatDashboard = () => {
   }, []);
 
   const handleModuleClick = (mod) => {
+    if (isModuleLocked(mod)) {
+      toast.error("Please complete payment to access this module.");
+      return;
+    }
     setActiveModule(mod);
     fetchModuleData(mod);
   };
@@ -227,6 +246,10 @@ const JamatDashboard = () => {
   // ── Schema builder ──────────────────────────────────────────────────────────
   const openSchemaBuilder = useCallback(
     async (mod) => {
+      if (isModuleLocked(mod)) {
+        toast.error("Please complete payment to access this module.");
+        return;
+      }
       setSchemaModule(mod);
       setShowSchemaBuilder(true);
       // Fetch existing schema if not cached
@@ -243,7 +266,7 @@ const JamatDashboard = () => {
         setSchemaFields(schemas[mod]?.fields ?? []);
       }
     },
-    [slug, token, schemas],
+    [slug, token, schemas, isModuleLocked],
   );
 
   const addSchemaField = () => {
@@ -286,6 +309,10 @@ const JamatDashboard = () => {
   // ── Add item (dynamic form) ─────────────────────────────────────────────────
   const openAddForm = useCallback(
     async (mod) => {
+      if (isModuleLocked(mod)) {
+        toast.error("Please complete payment to access this module.");
+        return;
+      }
       // Ensure schema loaded
       if (!schemas[mod]) {
         try {
@@ -299,7 +326,7 @@ const JamatDashboard = () => {
       setAddFormData({});
       setShowAddForm(true);
     },
-    [slug, token, schemas],
+    [slug, token, schemas, isModuleLocked],
   );
 
   const handleAddItem = async () => {
@@ -414,6 +441,7 @@ const JamatDashboard = () => {
                   mod={mod}
                   count={(moduleData[mod] || []).length}
                   hidden={hiddenModules.includes(mod)}
+                  locked={isModuleLocked(mod)}
                   onClick={() =>
                     !hiddenModules.includes(mod) && handleModuleClick(mod)
                   }

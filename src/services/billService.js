@@ -201,6 +201,25 @@ export const numberToWords = (num) => {
   return str.trim();
 };
 
+/**
+ * Get custom account type labels
+ * @returns {Promise} Custom labels object
+ */
+export const getCustomLabels = async () => {
+  const response = await axiosInstance.get("/bills/labels");
+  return response;
+};
+
+/**
+ * Update custom account type labels
+ * @param {Object} labelsData - Key-value pair of custom labels
+ * @returns {Promise} Update response
+ */
+export const updateCustomLabels = async (labelsData) => {
+  const response = await axiosInstance.post("/bills/labels", labelsData);
+  return response;
+};
+
 export default {
   getAllBills,
   getBillById,
@@ -211,6 +230,8 @@ export default {
   deleteBill,
   getReceiptData,
   getBillStats,
+  getCustomLabels,
+  updateCustomLabels,
   ACCOUNT_TYPES,
   numberToWords,
 };

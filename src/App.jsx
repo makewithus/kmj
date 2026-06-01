@@ -3,7 +3,7 @@
  * Main application with routing
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "./components/common/Toast";
 import ProtectedRoute from "./components/common/ProtectedRoute";
@@ -118,12 +118,34 @@ const NotFoundPage = () => (
 );
 
 function App() {
-  const { initAuth, isAuthenticated, isAdmin, _hydrated } = useAuthStore();
+  const { initAuth, isAuthenticated, isAdmin, _hydrated, logout } =
+    useAuthStore();
+  const inactivityTimerRef = useRef(null);
+  const resetInactivityTimer = useCallback(() => {
+    clearTimeout(inactivityTimerRef.current);
+    inactivityTimerRef.current = setTimeout(() => {
+      if (isAuthenticated) logout();
+    }, 10 * 60 * 1000);
+  }, [isAuthenticated, logout]);
 
   // Initialize auth on app load
   useEffect(() => {
     initAuth();
   }, [initAuth]);
+
+  // Auto-logout after inactivity (main app only)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const events = ["mousemove", "keydown", "click", "scroll"];
+    events.forEach((e) => window.addEventListener(e, resetInactivityTimer));
+    resetInactivityTimer();
+    return () => {
+      events.forEach((e) =>
+        window.removeEventListener(e, resetInactivityTimer),
+      );
+      clearTimeout(inactivityTimerRef.current);
+    };
+  }, [isAuthenticated, resetInactivityTimer]);
 
   // Spinner shown during persist rehydration
   if (!_hydrated) {

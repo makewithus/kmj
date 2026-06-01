@@ -2,16 +2,18 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { PrinterIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { getReceiptData } from '../../services/billService';
+import { getReceiptData, getCustomLabels, ACCOUNT_TYPES } from '../../services/billService';
 import logo from '../../assets/Images/logos.png';
 
 const ReceiptPage = () => {
   const { id } = useParams();
   const [receipt, setReceipt] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [customLabels, setCustomLabels] = useState({});
 
   useEffect(() => {
     fetchReceipt();
+    fetchLabels();
   }, [id]);
 
   const fetchReceipt = async () => {
@@ -25,6 +27,21 @@ const ReceiptPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchLabels = async () => {
+    try {
+      const response = await getCustomLabels();
+      if (response.data) {
+        setCustomLabels(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching labels:', error);
+    }
+  };
+
+  const getLabel = (typeValue) => {
+    return customLabels[typeValue] || ACCOUNT_TYPES.find((t) => t.value === typeValue)?.label || typeValue;
   };
 
   const handlePrint = () => {
@@ -178,7 +195,7 @@ const ReceiptPage = () => {
                   <tr className="border-b border-gray-200">
                     <td className="py-2 text-gray-600 font-semibold w-1/3">Account Type:</td>
                     <td className="py-2 text-gray-900 font-medium">
-                      {receipt.accountType || receipt.category || 'N/A'}
+                      {getLabel(receipt.accountType || receipt.category)}
                     </td>
                   </tr>
                   <tr className="border-b border-gray-200">

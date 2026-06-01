@@ -28,6 +28,7 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import { Card, Button } from "../../components/common";
 import financeService from "../../services/financeService";
 import { ANIMATION_VARIANTS } from "../../lib/constants";
+import { getAllBills, ACCOUNT_TYPES, getCustomLabels } from "../../services/billService";
 
 const FinancePage = () => {
   const [stats, setStats] = useState({
@@ -37,6 +38,32 @@ const FinancePage = () => {
     breakdown: [],
   });
   const [loading, setLoading] = useState(true);
+  const [billRows, setBillRows] = useState([]);
+  const [billLoading, setBillLoading] = useState(false);
+  const [billFilters, setBillFilters] = useState({
+    accountType: "",
+    startDate: "",
+    endDate: "",
+  });
+  const [customLabels, setCustomLabels] = useState({});
+
+  useEffect(() => {
+    const fetchLabels = async () => {
+      try {
+        const response = await getCustomLabels();
+        if (response.data) {
+          setCustomLabels(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load custom labels", error);
+      }
+    };
+    fetchLabels();
+  }, []);
+
+  const getLabel = (typeValue) => {
+    return customLabels[typeValue] || ACCOUNT_TYPES.find((t) => t.value === typeValue)?.label || typeValue;
+  };
 
   const fetchFinanceData = async () => {
     try {
@@ -58,12 +85,71 @@ const FinancePage = () => {
     fetchFinanceData();
   }, []);
 
+  const fetchBills = async (filters = billFilters) => {
+    setBillLoading(true);
+    try {
+      const response = await getAllBills({
+        page: 1,
+        limit: 200,
+        accountType: filters.accountType || undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+      });
+      const { bills } = response.data || {};
+      setBillRows(bills || []);
+    } catch (error) {
+      toast.error(error?.message || "Failed to load bills");
+      setBillRows([]);
+    } finally {
+      setBillLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBills();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
       maximumFractionDigits: 0,
     }).format(amount || 0);
+  };
+
+  const handleBillsExport = () => {
+    if (billRows.length === 0) {
+      toast.error("No bills to export");
+      return;
+    }
+    const headers = [
+      "Receipt No",
+      "Date",
+      "Mahal ID",
+      "Member Name",
+      "Account Type",
+      "Amount",
+      "Payment Method",
+    ];
+    const rows = billRows.map((bill) => [
+      bill.receiptNo || "N/A",
+      new Date(bill.createdAt || bill.date || bill.Date).toLocaleDateString(),
+      bill.mahalId || bill.Mahal_Id || bill.mahal_ID || "N/A",
+      bill.memberName || "N/A",
+      bill.accountType || bill.category || "N/A",
+      bill.amount || 0,
+      bill.paymentMethod || "Cash",
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `finance-bills-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success("Bills exported successfully");
   };
 
   return (
@@ -311,6 +397,153 @@ const FinancePage = () => {
                   </tbody>
                 </table>
               </div>
+            </Card.Content>
+          </Card>
+
+          {/* Bills Ledger */}
+          <Card className="rounded-3xl shadow-xl border-0 overflow-hidden">
+            <Card.Header className="bg-linear-to-r from-gray-50 to-[#E3F9F9]/20 border-b border-gray-150">
+              <Card.Title className="text-lg font-bold text-[#1F2E2E] flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-[#31757A]" />
+                Bills Ledger
+              </Card.Title>
+            </Card.Header>
+            <Card.Content className="p-6 space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500">Account Type</label>
+                  <select
+                    value={billFilters.accountType}
+                    onChange={(e) =>
+                      setBillFilters((prev) => ({
+                        ...prev,
+                        accountType: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                  >
+                    <option value="">All types</option>
+                    {ACCOUNT_TYPES.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {getLabel(type.value)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500">Start Date</label>
+                  <input
+                    type="date"
+                    value={billFilters.startDate}
+                    onChange={(e) =>
+                      setBillFilters((prev) => ({
+                        ...prev,
+                        startDate: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500">End Date</label>
+                  <input
+                    type="date"
+                    value={billFilters.endDate}
+                    onChange={(e) =>
+                      setBillFilters((prev) => ({
+                        ...prev,
+                        endDate: e.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => fetchBills()}
+                    disabled={billLoading}
+                    className="flex-1 border-2 border-[#31757A] text-[#31757A] hover:bg-[#E3F9F9]/50 font-semibold"
+                  >
+                    {billLoading ? "Loading…" : "Apply"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const reset = { accountType: "", startDate: "", endDate: "" };
+                      setBillFilters(reset);
+                      fetchBills(reset);
+                    }}
+                    className="border-2 border-gray-200 text-gray-600 hover:bg-gray-50"
+                  >
+                    Reset
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">
+                  Showing {billRows.length} bills
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={handleBillsExport}
+                  className="border-2 border-[#31757A] text-[#31757A] hover:bg-[#E3F9F9]/50 font-semibold"
+                >
+                  Export CSV
+                </Button>
+              </div>
+
+              {billLoading ? (
+                <div className="py-10 text-center text-gray-400">Loading bills…</div>
+              ) : billRows.length === 0 ? (
+                <div className="py-10 text-center text-gray-400">No bills found</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm">
+                    <thead className="text-left text-xs uppercase text-gray-400">
+                      <tr>
+                        <th className="py-2 pr-4">Receipt</th>
+                        <th className="py-2 pr-4">Date</th>
+                        <th className="py-2 pr-4">Mahal ID</th>
+                        <th className="py-2 pr-4">Member</th>
+                        <th className="py-2 pr-4">Account Type</th>
+                        <th className="py-2 pr-4 text-right">Amount</th>
+                        <th className="py-2 pr-4">Payment</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {billRows.map((bill) => (
+                        <tr key={bill.id || bill._id || bill.receiptNo}>
+                          <td className="py-2 pr-4 font-semibold text-gray-700">
+                            {bill.receiptNo || "—"}
+                          </td>
+                          <td className="py-2 pr-4 text-gray-500">
+                            {new Date(
+                              bill.createdAt || bill.date || bill.Date,
+                            ).toLocaleDateString("en-IN")}
+                          </td>
+                          <td className="py-2 pr-4 text-gray-500">
+                            {bill.mahalId || bill.Mahal_Id || bill.mahal_ID || "—"}
+                          </td>
+                          <td className="py-2 pr-4 text-gray-600">
+                            {bill.memberName || "—"}
+                          </td>
+                          <td className="py-2 pr-4 text-gray-600">
+                            {getLabel(bill.accountType || bill.category)}
+                          </td>
+                          <td className="py-2 pr-4 text-right font-semibold text-gray-700">
+                            {formatCurrency(bill.amount)}
+                          </td>
+                          <td className="py-2 pr-4 text-gray-500">
+                            {bill.paymentMethod || "Cash"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </Card.Content>
           </Card>
         </div>

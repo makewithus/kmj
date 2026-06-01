@@ -23,6 +23,8 @@ import {
   getMemberBills,
   ACCOUNT_TYPES,
   numberToWords,
+  getCustomLabels,
+  updateCustomLabels,
 } from "../../services/billService";
 import { toast } from "react-hot-toast";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -44,6 +46,43 @@ const QuickPayPage = () => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastBillId, setLastBillId] = useState(null);
+  const [customLabels, setCustomLabels] = useState({});
+  const [editedLabels, setEditedLabels] = useState({});
+  const [isEditingLabels, setIsEditingLabels] = useState(false);
+
+  // Fetch labels
+  useEffect(() => {
+    const fetchLabels = async () => {
+      try {
+        const response = await getCustomLabels();
+        if (response.data) {
+          setCustomLabels(response.data);
+          setEditedLabels(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load custom labels", error);
+      }
+    };
+    fetchLabels();
+  }, []);
+
+  const handleSaveLabels = async () => {
+    try {
+      setLoading(true);
+      await updateCustomLabels(editedLabels);
+      setCustomLabels(editedLabels);
+      setIsEditingLabels(false);
+      toast.success("Field names updated successfully!");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update field names"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getLabel = (typeValue) => {
+    return customLabels[typeValue] || ACCOUNT_TYPES.find((t) => t.value === typeValue)?.label || typeValue;
+  };
 
   // Update time every second
   useEffect(() => {
@@ -292,8 +331,47 @@ const QuickPayPage = () => {
               animate="visible"
             >
               <Card>
-                <Card.Header className="bg-primary-600 text-white">
+                <Card.Header className="bg-primary-600 text-white flex items-center justify-between">
                   <Card.Title>Payment Details</Card.Title>
+                  {!isEditingLabels ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setIsEditingLabels(true);
+                      }}
+                      className="text-white hover:bg-white/20 border border-white/20 px-3 py-1 text-xs"
+                    >
+                      Edit Field Names
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleSaveLabels();
+                        }}
+                        className="text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1 text-xs"
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setEditedLabels(customLabels);
+                          setIsEditingLabels(false);
+                        }}
+                        className="text-white bg-neutral-600 hover:bg-neutral-700 px-3 py-1 text-xs"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  )}
                 </Card.Header>
                 <form onSubmit={handleSubmit}>
                   <Card.Content className="pt-6">
@@ -304,26 +382,50 @@ const QuickPayPage = () => {
                           Account Type <span className="text-red-500">*</span>
                         </label>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          {ACCOUNT_TYPES.map((type) => (
-                            <label
-                              key={type.value}
-                              className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                                paymentForm.accountType === type.value
-                                  ? "border-primary-500 bg-primary-50"
-                                  : "border-neutral-200 hover:border-primary-300"
-                              }`}
-                            >
-                              <input
-                                type="radio"
-                                name="accountType"
-                                value={type.value}
-                                checked={paymentForm.accountType === type.value}
-                                onChange={handleFormChange}
-                                className="mr-2"
-                              />
-                              <span className="text-sm">{type.label}</span>
-                            </label>
-                          ))}
+                          {isEditingLabels
+                            ? ACCOUNT_TYPES.map((type) => (
+                                <div
+                                  key={type.value}
+                                  className="p-3 border-2 border-neutral-200 rounded-lg bg-neutral-50 shadow-xs"
+                                >
+                                  <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-1">
+                                    {type.value}
+                                  </p>
+                                  <input
+                                    type="text"
+                                    value={editedLabels[type.value] ?? ""}
+                                    onChange={(e) =>
+                                      setEditedLabels((prev) => ({
+                                        ...prev,
+                                        [type.value]: e.target.value,
+                                      }))
+                                    }
+                                    className="w-full px-2 py-1 text-xs border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white text-neutral-800"
+                                  />
+                                </div>
+                              ))
+                            : ACCOUNT_TYPES.map((type) => (
+                                <label
+                                  key={type.value}
+                                  className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                    paymentForm.accountType === type.value
+                                      ? "border-primary-500 bg-primary-50"
+                                      : "border-neutral-200 hover:border-primary-300"
+                                  }`}
+                                >
+                                  <input
+                                    type="radio"
+                                    name="accountType"
+                                    value={type.value}
+                                    checked={paymentForm.accountType === type.value}
+                                    onChange={handleFormChange}
+                                    className="mr-2"
+                                  />
+                                  <span className="text-sm font-medium text-neutral-800">
+                                    {getLabel(type.value)}
+                                  </span>
+                                </label>
+                              ))}
                         </div>
                       </div>
 

@@ -51,6 +51,7 @@ const MemberForm = () => {
     Resident: 'Own',
     Address: user?.address || '',
     Mward: user?.ward || '',
+    pendingAmount: 0,
   });
 
   // Fetch member data if editing
@@ -81,7 +82,11 @@ const MemberForm = () => {
         }
       }
       
-      setFormData(memberData);
+      const normalizedData = {};
+      Object.keys(memberData).forEach(key => {
+        normalizedData[key] = memberData[key] ?? '';
+      });
+      setFormData(normalizedData);
     } catch (error) {
       console.error('Error fetching member:', error);
       toast.error('Failed to load member data');
@@ -547,6 +552,27 @@ const MemberForm = () => {
                     <option value="Rent">Rent</option>
                     <option value="Other">Other</option>
                   </select>
+                </div>
+
+                {/* Pending Amount / Fine */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pending Amount / Fine (₹)
+                  </label>
+                  <input
+                    type="number"
+                    name="pendingAmount"
+                    value={formData.pendingAmount || ''}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        pendingAmount: e.target.value ? Number(e.target.value) : 0,
+                      }))
+                    }
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    placeholder="Enter pending amount or fine"
+                    min="0"
+                  />
                 </div>
 
                 {/* Full Address */}

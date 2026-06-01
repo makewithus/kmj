@@ -18,6 +18,7 @@ import {
   getAllBills,
   getBillStats,
   ACCOUNT_TYPES,
+  getCustomLabels,
 } from "../../services/billService";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AdminLayout from "../../components/layout/AdminLayout";
@@ -37,6 +38,25 @@ const BillsPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [customLabels, setCustomLabels] = useState({});
+
+  useEffect(() => {
+    const fetchLabels = async () => {
+      try {
+        const response = await getCustomLabels();
+        if (response.data) {
+          setCustomLabels(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load custom labels", error);
+      }
+    };
+    fetchLabels();
+  }, []);
+
+  const getLabel = (typeValue) => {
+    return customLabels[typeValue] || ACCOUNT_TYPES.find((t) => t.value === typeValue)?.label || typeValue;
+  };
 
   // Search and filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,21 +83,6 @@ const BillsPage = () => {
   const [pageCursors, setPageCursors] = useState({ 1: "" });
 
   const paymentMethods = ["Cash", "UPI", "Card", "Bank Transfer", "Cheque"];
-
-  // Check for search parameter from URL on mount
-  useEffect(() => {
-    const searchFromUrl = searchParams.get("search");
-    if (searchFromUrl) {
-      setSearchQuery(searchFromUrl);
-      setFilters((prev) => ({ ...prev, mahalId: searchFromUrl }));
-    }
-  }, [searchParams]);
-
-  // Fetch bills and stats
-  useEffect(() => {
-    fetchBills();
-    fetchStats();
-  }, [fetchBills, fetchStats]);
 
   const fetchBills = useCallback(async () => {
     try {
@@ -138,6 +143,21 @@ const BillsPage = () => {
       if (error?.response?.status === 404) return;
     }
   }, [filters]);
+
+  // Check for search parameter from URL on mount
+  useEffect(() => {
+    const searchFromUrl = searchParams.get("search");
+    if (searchFromUrl) {
+      setSearchQuery(searchFromUrl);
+      setFilters((prev) => ({ ...prev, mahalId: searchFromUrl }));
+    }
+  }, [searchParams]);
+
+  // Fetch bills and stats
+  useEffect(() => {
+    fetchBills();
+    fetchStats();
+  }, [fetchBills, fetchStats]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -301,13 +321,13 @@ const BillsPage = () => {
       </motion.div>
 
       {/* Stats Cards */}
-      {/* <motion.div
+      <motion.div
         variants={ANIMATION_VARIANTS.slideUp}
         initial="hidden"
         animate="visible"
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
       >
-        {/* Total Bills Card *
+        {/* Total Bills Card */}
         <motion.div
           whileHover={{ y: -5, shadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}
           className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-500 to-blue-600 p-6 shadow-xl"
@@ -328,7 +348,7 @@ const BillsPage = () => {
           </div>
         </motion.div>
 
-        {/* Total Amount Card *
+        {/* Total Amount Card */}
         <motion.div
           whileHover={{ y: -5, shadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}
           className="relative overflow-hidden rounded-2xl bg-linear-to-br from-green-500 to-green-600 p-6 shadow-xl"
@@ -349,7 +369,7 @@ const BillsPage = () => {
           </div>
         </motion.div>
 
-        {/* Today's Collection Card *
+        {/* Today's Collection Card */}
         <motion.div
           whileHover={{ y: -5, shadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}
           className="relative overflow-hidden rounded-2xl bg-linear-to-br from-amber-500 to-amber-600 p-6 shadow-xl"
@@ -370,7 +390,7 @@ const BillsPage = () => {
           </div>
         </motion.div>
 
-        {/* This Month Card *
+        {/* This Month Card */}
         <motion.div
           whileHover={{ y: -5, shadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)" }}
           className="relative overflow-hidden rounded-2xl bg-linear-to-br from-purple-500 to-purple-600 p-6 shadow-xl"
@@ -390,7 +410,7 @@ const BillsPage = () => {
             </div>
           </div>
         </motion.div>
-      </motion.div> */}
+      </motion.div>
 
       {/* Search and Filter Bar */}
       <motion.div
@@ -470,7 +490,7 @@ const BillsPage = () => {
                         <option value="">All Types</option>
                         {ACCOUNT_TYPES.map((type) => (
                           <option key={type.value} value={type.value}>
-                            {type.label}
+                            {getLabel(type.value)}
                           </option>
                         ))}
                       </select>
@@ -736,7 +756,7 @@ const BillsPage = () => {
                             )}
                             size="sm"
                           >
-                            {bill.accountType || bill.category || "N/A"}
+                            {getLabel(bill.accountType || bill.category)}
                           </Badge>
                         </td>
                         <td className="px-6 py-5 whitespace-nowrap">

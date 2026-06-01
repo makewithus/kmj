@@ -70,7 +70,28 @@ const MemberFormPage = () => {
     try {
       setLoading(true);
       const response = await getMemberById(id);
-      setFormData(response.data);
+      const memberData = response.data;
+
+      // Format dates for HTML date inputs (YYYY-MM-DD)
+      if (memberData.Dob) {
+        const dobDate = new Date(memberData.Dob);
+        if (!isNaN(dobDate.getTime())) {
+          memberData.Dob = dobDate.toISOString().split("T")[0];
+        }
+      }
+
+      if (memberData.Myear) {
+        const myearDate = new Date(memberData.Myear);
+        if (!isNaN(myearDate.getTime())) {
+          memberData.Myear = myearDate.toISOString().split("T")[0];
+        }
+      }
+
+      const normalizedData = {};
+      Object.keys(memberData).forEach((key) => {
+        normalizedData[key] = memberData[key] ?? "";
+      });
+      setFormData(normalizedData);
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to load member data"));
       navigate("/admin/members");

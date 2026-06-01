@@ -116,6 +116,8 @@ const DashboardAccessPage = () => {
                 ...p,
                 credentials: {
                   username: updated?.username || editForm.username,
+                  plainPassword:
+                    updated?.plainPassword || editForm.newPassword,
                 },
                 credentialsUpdatedAt: new Date().toISOString(),
               }
@@ -645,9 +647,15 @@ const DashboardAccessPage = () => {
                           </span>
                           <code className="text-xs text-gray-700 font-mono">
                             {revealedSlugs[portal.slug]
-                              ? "Hidden for security"
+                              ? portal.credentials?.plainPassword || "Reset required"
                               : "••••••••"}
                           </code>
+                          {revealedSlugs[portal.slug] &&
+                            portal.credentials?.plainPassword && (
+                              <CopyButton
+                                text={portal.credentials?.plainPassword}
+                              />
+                            )}
                           <button
                             onClick={() => toggleReveal(portal.slug)}
                             className="p-0.5 text-gray-400 hover:text-[#31757A] transition-colors"
