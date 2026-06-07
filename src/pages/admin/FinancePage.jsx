@@ -28,7 +28,7 @@ import AdminLayout from "../../components/layout/AdminLayout";
 import { Card, Button } from "../../components/common";
 import financeService from "../../services/financeService";
 import { ANIMATION_VARIANTS } from "../../lib/constants";
-import { getAllBills, ACCOUNT_TYPES, getCustomLabels } from "../../services/billService";
+import { getAllBills, ACCOUNT_TYPES } from "../../services/billService";
 
 const FinancePage = () => {
   const [stats, setStats] = useState({
@@ -45,25 +45,6 @@ const FinancePage = () => {
     startDate: "",
     endDate: "",
   });
-  const [customLabels, setCustomLabels] = useState({});
-
-  useEffect(() => {
-    const fetchLabels = async () => {
-      try {
-        const response = await getCustomLabels();
-        if (response.data) {
-          setCustomLabels(response.data);
-        }
-      } catch (error) {
-        console.error("Failed to load custom labels", error);
-      }
-    };
-    fetchLabels();
-  }, []);
-
-  const getLabel = (typeValue) => {
-    return customLabels[typeValue] || ACCOUNT_TYPES.find((t) => t.value === typeValue)?.label || typeValue;
-  };
 
   const fetchFinanceData = async () => {
     try {
@@ -425,7 +406,7 @@ const FinancePage = () => {
                     <option value="">All types</option>
                     {ACCOUNT_TYPES.map((type) => (
                       <option key={type.value} value={type.value}>
-                        {getLabel(type.value)}
+                        {type.label}
                       </option>
                     ))}
                   </select>
@@ -530,7 +511,7 @@ const FinancePage = () => {
                             {bill.memberName || "—"}
                           </td>
                           <td className="py-2 pr-4 text-gray-600">
-                            {getLabel(bill.accountType || bill.category)}
+                            {bill.accountType || bill.category || "—"}
                           </td>
                           <td className="py-2 pr-4 text-right font-semibold text-gray-700">
                             {formatCurrency(bill.amount)}

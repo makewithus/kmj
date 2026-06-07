@@ -10,6 +10,7 @@ import {
   PhoneIcon,
   EnvelopeIcon,
   ClockIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 
 const ContactPage = () => {
@@ -256,19 +257,19 @@ const ContactPage = () => {
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#E3F9F9] flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-[#31757A] text-xs font-bold">✓</span>
+                      <CheckIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#31757A]" />
                     </div>
                     <span className="text-sm sm:text-base text-gray-600">Easy accessibility</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#E3F9F9] flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-[#31757A] text-xs font-bold">✓</span>
+                      <CheckIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#31757A]" />
                     </div>
                     <span className="text-sm sm:text-base text-gray-600">Parking available</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#E3F9F9] flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-[#31757A] text-xs font-bold">✓</span>
+                      <CheckIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#31757A]" />
                     </div>
                     <span className="text-sm sm:text-base text-gray-600">Friendly staff</span>
                   </div>

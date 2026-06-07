@@ -26,6 +26,8 @@ const RegisterPage = () => {
     name: '',
     address: '',
     aadhaar: '',
+    password: '',
+    confirmPassword: '',
     ward: '',
     houseNo: '',
     phone: '',
@@ -66,6 +68,20 @@ const RegisterPage = () => {
       newErrors.aadhaar = 'Aadhaar must be exactly 12 digits';
     }
 
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/.test(formData.password)) {
+      newErrors.password = 'Password must include uppercase, lowercase, and number';
+    } else if (formData.password === formData.aadhaar) {
+      newErrors.password = 'Password cannot be your Aadhaar number';
+    }
+
+    if (formData.confirmPassword !== formData.password) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
     if (!formData.ward.trim()) {
       newErrors.ward = 'Ward number is required';
     }
@@ -99,13 +115,14 @@ const RegisterPage = () => {
       name: formData.name,
       address: formData.address,
       aadhaar: formData.aadhaar,
+      password: formData.password,
       ward: formData.ward,
       houseNo: formData.houseNo,
       phone: formData.phone,
     });
 
     if (result.success) {
-      showToast.success('Registration successful! Please login with your Member ID and Aadhaar.');
+      showToast.success('Registration successful! Please login with your Member ID and password.');
       navigate('/login');
     } else {
       showToast.error(result.error || 'Registration failed. Please try again.');
@@ -221,7 +238,68 @@ const RegisterPage = () => {
               {errors.aadhaar}
             </motion.p>
           )}
-          <p className="text-xs text-gray-500">12-digit Aadhaar number (will be used as password)</p>
+          <p className="text-xs text-gray-500">12-digit Aadhaar number for identity verification</p>
+        </div>
+
+        {/* Password */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-bold text-[#1F2E2E] tracking-wide">
+              Password
+            </label>
+            <div className="relative group">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#31757A] transition-colors">
+                <LockClosedIcon className="h-5 w-5" />
+              </div>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="Strong password"
+                autoComplete="new-password"
+                className="w-full pl-11 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl text-[#1F2E2E] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#31757A] focus:border-[#31757A] focus:shadow-lg focus:shadow-[#31757A]/20 transition-all duration-200 shadow-sm group-hover:border-gray-300"
+              />
+            </div>
+            {errors.password && (
+              <motion.p
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-xs text-red-600"
+              >
+                {errors.password}
+              </motion.p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-bold text-[#1F2E2E] tracking-wide">
+              Confirm Password
+            </label>
+            <div className="relative group">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#31757A] transition-colors">
+                <LockClosedIcon className="h-5 w-5" />
+              </div>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                placeholder="Repeat password"
+                autoComplete="new-password"
+                className="w-full pl-11 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl text-[#1F2E2E] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#31757A] focus:border-[#31757A] focus:shadow-lg focus:shadow-[#31757A]/20 transition-all duration-200 shadow-sm group-hover:border-gray-300"
+              />
+            </div>
+            {errors.confirmPassword && (
+              <motion.p
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-xs text-red-600"
+              >
+                {errors.confirmPassword}
+              </motion.p>
+            )}
+          </div>
         </div>
 
         {/* Ward and House Number */}

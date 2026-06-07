@@ -11,7 +11,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }) => {
   const { isAuthenticated, isAdmin, user, _hydrated } = useAuthStore();
   const location = useLocation();
 
-  // Wait for Zustand persist to finish rehydrating from localStorage
+  // Wait for the live server-side auth check to finish
   if (!_hydrated) {
     return <PageLoader message="Loading..." />;
   }

@@ -1,6 +1,6 @@
 /**
  * Forgot Password Page - New Color Palette Design
- * Password verification using Member ID and Aadhaar
+ * Password recovery identity check using Member ID and Aadhaar
  */
 
 import { useState } from 'react';
@@ -129,11 +129,11 @@ const ForgotPasswordPage = () => {
             <div className="flex items-start gap-3">
               <InformationCircleIcon className="h-6 w-6 text-blue-600 shrink-0 mt-0.5" />
               <div className="space-y-2 text-sm text-gray-700">
-                <p className="font-bold text-[#1F2E2E]">Your Password:</p>
+                <p className="font-bold text-[#1F2E2E]">Next Step:</p>
                 <ul className="space-y-1.5 ml-4 list-disc">
-                  <li>Your 12-digit Aadhaar number is your password</li>
-                  <li>Use it to login to your account</li>
-                  <li>Contact admin to update Aadhaar details</li>
+                  <li>Your identity check was accepted</li>
+                  <li>Contact an administrator to complete the password reset</li>
+                  <li>Never use your Aadhaar number as your password</li>
                 </ul>
               </div>
             </div>
@@ -273,9 +273,9 @@ const ForgotPasswordPage = () => {
             <div className="space-y-1 text-xs text-gray-700">
               <p className="font-semibold text-[#1F2E2E]">Important:</p>
               <ul className="space-y-0.5 list-disc list-inside">
-                <li>Your Aadhaar number is your password</li>
-                <li>This verification confirms your identity</li>
-                <li>Contact admin to update Aadhaar details</li>
+                <li>Aadhaar is used only for identity verification</li>
+                <li>Your account password is separate from Aadhaar</li>
+                <li>Contact admin if your Aadhaar details need correction</li>
               </ul>
             </div>
           </div>

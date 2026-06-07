@@ -1,12 +1,11 @@
 /**
  * Authentication Store
  * Zustand state management for auth
- * Security: isAuthenticated is NEVER restored from localStorage.
+ * Security: isAuthenticated is NEVER restored from browser storage.
  * It can only be set to true after a live server-side JWT verification (initAuth).
  */
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 import { authAPI } from "../services/api.service";
 import axiosInstance from "../api/axios.config";
 
@@ -39,12 +38,9 @@ const isTokenExpired = (token) => {
   return payload.exp * 1000 < Date.now() - 10_000;
 };
 
-const useAuthStore = create(
-  persist(
-    (set, get) => ({
+const useAuthStore = create((set, get) => ({
       // State
-      // NOTE: user and token may be restored from localStorage by `partialize`,
-      // but isAuthenticated always starts as false and only becomes true after
+      // NOTE: isAuthenticated always starts as false and only becomes true after
       // a successful live server verification in initAuth() or login().
       user: null,
       token: null,
@@ -57,12 +53,10 @@ const useAuthStore = create(
       setUser: (user) => set({ user, isAuthenticated: !!user }),
 
       /**
-       * Called by Zustand's onRehydrateStorage once localStorage data is loaded.
-       * We intentionally keep isAuthenticated: false here — the user must be
-       * re-validated by the server via initAuth() before gaining access.
+       * Marks the initial auth check as complete without granting access.
        */
       setHydrated: () =>
-        set({ _hydrated: false, isAuthenticated: false, user: null }),
+        set({ _hydrated: true, isAuthenticated: false, user: null }),
 
       setToken: (token) => {
         if (token) {
@@ -239,7 +233,7 @@ const useAuthStore = create(
       /**
        * Initialize auth state by validating the stored token with the server.
        * This is the ONLY way isAuthenticated becomes true after a page reload.
-       * Auto-login from localStorage is intentional and secure because:
+       * Session resume from sessionStorage is intentionally strict because:
        *  1. We verify the token is not expired client-side first.
        *  2. We call /auth/me on the server to confirm the session is still valid.
        *  3. If the server rejects the token for any reason, we clear all state.
@@ -301,22 +295,6 @@ const useAuthStore = create(
           set({ _hydrated: true });
         }
       },
-    }),
-    {
-      name: "auth-storage",
-      storage: createJSONStorage(() => sessionStorage),
-      onRehydrateStorage: () => (state) => {
-        // After sessionStorage data is loaded, immediately reset isAuthenticated.
-        // initAuth() will set it back to true only after server validation.
-        if (state) state.setHydrated();
-      },
-      // Only persist the raw token — NOT isAuthenticated or user object.
-      // The user object is re-fetched from the server on every page load.
-      partialize: (state) => ({
-        token: state.token,
-      }),
-    },
-  ),
-);
+}));
 
 export default useAuthStore;

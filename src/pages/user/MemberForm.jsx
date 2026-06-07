@@ -82,11 +82,7 @@ const MemberForm = () => {
         }
       }
       
-      const normalizedData = {};
-      Object.keys(memberData).forEach(key => {
-        normalizedData[key] = memberData[key] ?? '';
-      });
-      setFormData(normalizedData);
+      setFormData(memberData);
     } catch (error) {
       console.error('Error fetching member:', error);
       toast.error('Failed to load member data');

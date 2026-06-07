@@ -96,7 +96,7 @@ export const authAPI = {
    * @returns {Promise} API response
    */
   changePassword: async (data) => {
-    const response = await axiosInstance.post('/auth/change-password', data);
+    const response = await axiosInstance.put('/auth/change-password', data);
     return response; // Axios interceptor already unwraps response.data
   },
 };

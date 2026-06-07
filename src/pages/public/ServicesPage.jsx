@@ -15,6 +15,7 @@ import {
   PhoneIcon,
   HomeIcon,
   AcademicCapIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 import banner1 from '../../assets/Images/banner-1.jpg';
 
@@ -181,10 +182,12 @@ const ServicesPage = () => {
                 <ul className="space-y-1.5 sm:space-y-2">
                   {service.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-gray-600">
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#E3F9F9] flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="text-[#31757A] text-xs">✓</span>
+                      <div className="flex items-start gap-3">
+                        <div className="w-5 h-5 rounded-full bg-[#E3F9F9] flex items-center justify-center shrink-0 mt-0.5">
+                          <CheckIcon className="w-3 h-3 text-[#31757A] font-bold" />
+                        </div>
+                        <span className="text-sm text-gray-600">{feature}</span>
                       </div>
-                      {feature}
                     </li>
                   ))}
                 </ul>
@@ -272,7 +275,7 @@ const ServicesPage = () => {
                 ].map((feature, index) => (
                   <div key={index} className="flex items-start gap-2.5 sm:gap-3">
                     <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-linear-to-br from-[#31757A] to-[#41A4A7] flex items-center justify-center shrink-0 mt-0.5">
-                      <span className="text-white text-xs font-bold">✓</span>
+                      <CheckIcon className="w-3 h-3 text-white font-bold" />
                     </div>
                     <p className="text-sm sm:text-base text-gray-700">{feature}</p>
                   </div>

@@ -15,6 +15,7 @@ import {
   PhoneIcon,
   IdentificationIcon,
   CalendarDaysIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useUserPortalAuth } from "../../context/UserPortalAuthContext";
@@ -94,6 +95,7 @@ const MemberCard = memo(({ member, isOwner }) => (
         </div>
         {Number(member.pendingAmount || 0) > 0 && (
           <div className="mt-3 flex items-center gap-1.5 text-xs text-red-600 font-semibold bg-red-50 border border-red-100 rounded-lg px-2.5 py-1.5 w-fit">
+            <ExclamationTriangleIcon className="w-4 h-4" />
             <span>Pending Fine / Amount: ₹{Number(member.pendingAmount).toLocaleString("en-IN")}</span>
           </div>
         )}
@@ -191,7 +193,8 @@ const UserPortalDashboard = () => {
           </p>
           {totalPending > 0 && (
             <div className="mt-4 inline-flex items-center gap-2 bg-yellow-500/25 border border-yellow-400/40 rounded-xl px-4 py-2 text-sm text-yellow-100 font-semibold shadow-inner">
-              <span>⚠️ Notice: Outstanding Fine/Pending Amount: ₹{totalPending.toLocaleString("en-IN")}</span>
+              <ExclamationTriangleIcon className="w-4 h-4" />
+              <span>Notice: Outstanding Fine/Pending Amount: ₹{totalPending.toLocaleString("en-IN")}</span>
             </div>
           )}
         </motion.div>

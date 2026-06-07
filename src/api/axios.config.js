@@ -34,7 +34,7 @@ const processQueue = (error, token = null) => {
 
 // Logout helper function
 const handleLogout = (message = "Session expired. Please login again.") => {
-  console.log("🚪 Logging out user:", message);
+ console.log("Logging out user:", message);
 
   // Clear all auth data
   sessionStorage.removeItem("token");
@@ -83,7 +83,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
     const errorMessage = error.response?.data?.message || "An error occurred";
 
-    console.log("❌ API Error:", {
+ console.log("API Error:", {
       status: error.response?.status,
       message: errorMessage,
       url: originalRequest?.url,
@@ -114,7 +114,7 @@ api.interceptors.response.use(
         errorMessage.toLowerCase().includes("expired") ||
         originalRequest._retry
       ) {
-        console.warn("🚪 Token expired or refresh failed, logging out...");
+ console.warn("Token expired or refresh failed, logging out...");
         handleLogout("Your session has expired. Please login again.");
         return Promise.reject({ message: errorMessage, status: 401 });
       }
@@ -142,7 +142,7 @@ api.interceptors.response.use(
 
         if (!refreshToken) {
           // No refresh token, logout
-          console.warn("🚪 No refresh token found, logging out");
+ console.warn("No refresh token found, logging out");
           isRefreshing = false;
           handleLogout("Session expired. Please login again.");
           return Promise.reject({ message: errorMessage, status: 401 });
@@ -150,7 +150,7 @@ api.interceptors.response.use(
 
         try {
           // Call refresh token endpoint
-          console.log("🔄 Attempting to refresh token...");
+ console.log("Attempting to refresh token...");
           const response = await axios.post(
             `${API_BASE_URL}/auth/refresh-token`,
             {
@@ -161,7 +161,7 @@ api.interceptors.response.use(
           const { token: newToken, refreshToken: newRefreshToken } =
             response.data.data;
 
-          console.log("✅ Token refresh successful");
+ console.log("Token refresh successful");
 
           // Store new tokens
           sessionStorage.setItem("token", newToken);
@@ -180,7 +180,7 @@ api.interceptors.response.use(
           return api(originalRequest);
         } catch (refreshError) {
           // Refresh failed, logout
-          console.error("🚪 Refresh token failed, logging out");
+ console.error("Refresh token failed, logging out");
           processQueue(refreshError, null);
           isRefreshing = false;
           handleLogout("Session expired. Please login again.");

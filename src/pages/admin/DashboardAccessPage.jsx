@@ -16,9 +16,9 @@ import {
   CheckIcon,
   LinkIcon,
   EyeIcon,
-  EyeSlashIcon,
   XMarkIcon,
   KeyIcon,
+  ExclamationTriangleIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import AdminLayout from "../../components/layout/AdminLayout";
@@ -46,10 +46,9 @@ const ALL_MODULES = [
 const generatePassword = () => {
   const chars =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  return Array.from(
-    { length: 12 },
-    () => chars[Math.floor(Math.random() * chars.length)],
-  ).join("");
+  const bytes = new Uint32Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => chars[byte % chars.length]).join("");
 };
 
 const CopyButton = ({ text }) => {
@@ -81,13 +80,9 @@ const DashboardAccessPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [createdCreds, setCreatedCreds] = useState(null);
-  const [revealedSlugs, setRevealedSlugs] = useState({});
   const [editingSlug, setEditingSlug] = useState(null);
   const [editForm, setEditForm] = useState({ username: "", newPassword: "" });
   const [editSaving, setEditSaving] = useState(false);
-
-  const toggleReveal = (slug) =>
-    setRevealedSlugs((p) => ({ ...p, [slug]: !p[slug] }));
 
   const openEdit = (portal) => {
     setEditingSlug(portal.slug);
@@ -98,8 +93,8 @@ const DashboardAccessPage = () => {
   };
 
   const handleCredentialsSave = async (slug) => {
-    if (!editForm.newPassword || editForm.newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (!editForm.newPassword || editForm.newPassword.length < 12) {
+      toast.error("Password must be at least 12 characters");
       return;
     }
     setEditSaving(true);
@@ -116,14 +111,22 @@ const DashboardAccessPage = () => {
                 ...p,
                 credentials: {
                   username: updated?.username || editForm.username,
-                  plainPassword:
-                    updated?.plainPassword || editForm.newPassword,
+                  passwordRecoverable: false,
                 },
                 credentialsUpdatedAt: new Date().toISOString(),
               }
             : p,
         ),
       );
+      const portal = portals.find((p) => p.slug === slug);
+      setCreatedCreds({
+        slug,
+        jamatName: portal?.jamatName || slug,
+        username: updated?.username || editForm.username,
+        password: editForm.newPassword,
+        amount: portal?.amount || 0,
+        loginUrl: `${window.location.origin}/${slug}/login`,
+      });
       toast.success("Credentials updated");
       setEditingSlug(null);
     } catch (err) {
@@ -166,8 +169,8 @@ const DashboardAccessPage = () => {
     if (!form.jamatName.trim()) e.jamatName = "Jamat name is required";
     if (!form.username.trim()) e.username = "Username is required";
     if (!form.password) e.password = "Password is required";
-    else if (form.password.length < 6)
-      e.password = "Password must be at least 6 characters";
+    else if (form.password.length < 12)
+      e.password = "Password must be at least 12 characters";
     if (form.enabledModules.length === 0)
       e.modules = "Select at least one module";
     setErrors(e);
@@ -277,10 +280,13 @@ const DashboardAccessPage = () => {
 
               {/* Body */}
               <div className="px-6 py-5 space-y-4">
-                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                  ⚠️ Save these credentials now — the password is not stored in
-                  plain text and cannot be recovered.
-                </p>
+                <div className="flex gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                  <ExclamationTriangleIcon className="w-5 h-5 shrink-0" />
+                  <p>
+                    Save these credentials now — the password is not stored in
+                    plain text and cannot be recovered.
+                  </p>
+                </div>
 
                 {[
                   { label: "Portal URL", value: createdCreds.loginUrl },
@@ -434,7 +440,7 @@ const DashboardAccessPage = () => {
                     <div className="flex gap-2">
                       <input
                         type="text"
-                        placeholder="Min 6 characters"
+                        placeholder="Min 12 characters"
                         value={form.password}
                         onChange={(e) => {
                           setForm((p) => ({ ...p, password: e.target.value }));
@@ -646,32 +652,11 @@ const DashboardAccessPage = () => {
                             Pass:
                           </span>
                           <code className="text-xs text-gray-700 font-mono">
-                            {revealedSlugs[portal.slug]
-                              ? portal.credentials?.plainPassword || "Reset required"
-                              : "••••••••"}
+                            Reset required
                           </code>
-                          {revealedSlugs[portal.slug] &&
-                            portal.credentials?.plainPassword && (
-                              <CopyButton
-                                text={portal.credentials?.plainPassword}
-                              />
-                            )}
-                          <button
-                            onClick={() => toggleReveal(portal.slug)}
-                            className="p-0.5 text-gray-400 hover:text-[#31757A] transition-colors"
-                            title={revealedSlugs[portal.slug] ? "Hide" : "Show"}
-                          >
-                            {revealedSlugs[portal.slug] ? (
-                              <EyeSlashIcon className="h-3.5 w-3.5" />
-                            ) : (
-                              <EyeIcon className="h-3.5 w-3.5" />
-                            )}
-                          </button>
-                          {revealedSlugs[portal.slug] && (
-                            <span className="text-[11px] text-gray-400">
-                              Reset to issue a new password
-                            </span>
-                          )}
+                          <span className="text-[11px] text-gray-400">
+                            Passwords are shown only immediately after create or reset.
+                          </span>
                         </div>
                       </div>
 
@@ -788,7 +773,7 @@ const DashboardAccessPage = () => {
                                 <div className="flex gap-1">
                                   <input
                                     type="text"
-                                    placeholder="Min 6 chars"
+                                    placeholder="Min 12 chars"
                                     value={editForm.newPassword}
                                     onChange={(e) =>
                                       setEditForm((p) => ({

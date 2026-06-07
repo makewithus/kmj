@@ -186,9 +186,9 @@ export function calculateAge(dob) {
  */
 export function getGenderIcon(gender) {
   const icons = {
-    Male: "👨",
-    Female: "👩",
-    Other: "🧑",
+    Male: "[M]",
+    Female: "[F]",
+    Other: "[O]",
   };
 
   return icons[gender] || icons.Other;
@@ -199,13 +199,13 @@ export function getGenderIcon(gender) {
  */
 export function getRelationBadge(relation) {
   const badges = {
-    Head: "👨‍👩‍👧‍👦",
-    Spouse: "💑",
-    Son: "👦",
-    Daughter: "👧",
-    Father: "👴",
-    Mother: "👵",
+    Head: "[Head]",
+    Spouse: "[Spouse]",
+    Son: "[Son]",
+    Daughter: "[Daughter]",
+    Father: "[Father]",
+    Mother: "[Mother]",
   };
 
-  return badges[relation] || "👤";
+  return badges[relation] || "[Member]";
 }
