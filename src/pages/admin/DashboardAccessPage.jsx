@@ -166,7 +166,7 @@ const DashboardAccessPage = () => {
 
   const validate = () => {
     const e = {};
-    if (!form.jamatName.trim()) e.jamatName = "Jamat name is required";
+    if (!form.jamatName.trim()) e.jamatName = "Jamaath name is required";
     if (!form.username.trim()) e.username = "Username is required";
     if (!form.password) e.password = "Password is required";
     else if (form.password.length < 12)
@@ -223,7 +223,7 @@ const DashboardAccessPage = () => {
 
   const toggleModule = (id) => {
     if (id === "members" && form.enabledModules.includes(id)) {
-      toast.error("Members should remain enabled for every Jamat portal.");
+      toast.error("Members should remain enabled for every Jamaath portal.");
       return;
     }
     setForm((p) => ({
@@ -349,7 +349,7 @@ const DashboardAccessPage = () => {
               Dashboard Access
             </h1>
             <p className="text-gray-500 mt-1">
-              Create and manage isolated Jamat portals
+              Create and manage isolated Jamaath portals
             </p>
           </div>
           <button
@@ -374,7 +374,7 @@ const DashboardAccessPage = () => {
             <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
                 <BuildingOffice2Icon className="h-5 w-5 text-[#31757A]" />
-                New Jamat Portal
+                New Jamaath Portal
               </h3>
 
               <form onSubmit={handleSubmit} className="space-y-5">
@@ -382,11 +382,11 @@ const DashboardAccessPage = () => {
                   {/* Jamat Name */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                      Jamat Name <span className="text-red-500">*</span>
+                      Jamaath Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. AlJamat"
+                      placeholder="e.g. AlJamaath"
                       value={form.jamatName}
                       onChange={(e) => {
                         setForm((p) => ({ ...p, jamatName: e.target.value }));
@@ -413,7 +413,7 @@ const DashboardAccessPage = () => {
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. aljamat_admin"
+                      placeholder="e.g. aljamaath_admin"
                       value={form.username}
                       onChange={(e) => {
                         setForm((p) => ({ ...p, username: e.target.value }));
@@ -486,7 +486,7 @@ const DashboardAccessPage = () => {
                       className="w-full px-4 py-2.5 border-2 rounded-xl text-sm outline-none transition-all border-gray-200 focus:border-[#31757A]"
                     />
                     <p className="text-xs text-gray-400 mt-1">
-                      This amount will be payable from the created Jamat portal.
+                      This amount will be payable from the created Jamaath portal.
                     </p>
                   </div>
                 </div>

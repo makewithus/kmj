@@ -26,6 +26,7 @@ import {
   TableCellsIcon,
   CheckIcon,
   XMarkIcon,
+  PencilIcon,
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 import { useJamatAuth } from "../../context/JamatAuthContext";
@@ -36,6 +37,7 @@ import {
   updateJamatSettingsAPI,
   getModuleSchemaAPI,
   saveModuleSchemaAPI,
+  updateJamatModuleItemAPI,
 } from "../../services/portalService";
 import { getErrorMessage } from "../../lib/utils";
 
@@ -151,6 +153,7 @@ const JamatDashboard = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [addFormData, setAddFormData] = useState({});
   const [addingItem, setAddingItem] = useState(false);
+  const [editingItemId, setEditingItemId] = useState(null);
 
 
 
@@ -306,15 +309,16 @@ const JamatDashboard = () => {
     }
   };
 
-  // ── Add item (dynamic form) ─────────────────────────────────────────────────
+  // ── Add/Edit item ──────────────────────────────────────────────────────────
   const openAddForm = useCallback(
     async (mod) => {
       if (isModuleLocked(mod)) {
         toast.error("Please complete payment to access this module.");
         return;
       }
+      setEditingItemId(null);
       // Ensure schema loaded
-      if (!schemas[mod]) {
+      if (mod !== "members" && !schemas[mod]) {
         try {
           const res = await getModuleSchemaAPI(slug, mod, token);
           const fields = res?.data?.schema?.fields ?? res?.schema?.fields ?? [];
@@ -329,23 +333,53 @@ const JamatDashboard = () => {
     [slug, token, schemas, isModuleLocked],
   );
 
+  const handleOpenEditForm = useCallback(
+    (mod, item) => {
+      if (isModuleLocked(mod)) {
+        toast.error("Please complete payment to access this module.");
+        return;
+      }
+      setEditingItemId(item.id);
+      setAddFormData(item);
+      setShowAddForm(true);
+    },
+    [isModuleLocked]
+  );
+
   const handleAddItem = async () => {
     if (!activeModule) return;
+    if (activeModule === "members") {
+      if (!addFormData.Fname || !addFormData.Dob || !addFormData.Aadhaar) {
+        toast.error("Please fill in all required fields (Full Name, Date of Birth, Aadhaar Number)");
+        return;
+      }
+    }
     setAddingItem(true);
     try {
-      const res = await addJamatModuleItemAPI(slug, activeModule, token, addFormData);
-      // Backend returns { success, data: { id } } — store with real Firestore ID
-      const newId = res?.data?.id ?? res?.id;
-      const newItem = { ...addFormData, id: newId, createdAt: new Date().toISOString() };
-      setModuleData((p) => ({
-        ...p,
-        [activeModule]: [newItem, ...(p[activeModule] || [])],
-      }));
-      toast.success("Item added");
+      if (editingItemId) {
+        await updateJamatModuleItemAPI(slug, activeModule, editingItemId, token, addFormData);
+        setModuleData((p) => ({
+          ...p,
+          [activeModule]: (p[activeModule] || []).map((item) =>
+            item.id === editingItemId ? { ...item, ...addFormData, updatedAt: new Date().toISOString() } : item
+          ),
+        }));
+        toast.success("Item updated");
+      } else {
+        const res = await addJamatModuleItemAPI(slug, activeModule, token, addFormData);
+        const newId = res?.data?.id ?? res?.id;
+        const newItem = { ...addFormData, id: newId, createdAt: new Date().toISOString() };
+        setModuleData((p) => ({
+          ...p,
+          [activeModule]: [newItem, ...(p[activeModule] || [])],
+        }));
+        toast.success("Item added");
+      }
       setShowAddForm(false);
       setAddFormData({});
+      setEditingItemId(null);
     } catch (err) {
-      toast.error(getErrorMessage(err, "Failed to add item"));
+      toast.error(getErrorMessage(err, "Failed to save item"));
     } finally {
       setAddingItem(false);
     }
@@ -502,21 +536,47 @@ const JamatDashboard = () => {
                     className="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between gap-4 hover:shadow-sm transition-all"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
-                        {item.title || item.name || item.Name || item.id}
+                      <p className="font-semibold text-gray-900 truncate">
+                        {item.Fname || item.title || item.name || item.Name || item.id}
                       </p>
-                      {item.createdAt && (
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {new Date(item.createdAt).toLocaleDateString("en-IN")}
-                        </p>
+                      {activeModule === "members" ? (
+                        <div className="text-xs text-gray-500 mt-1 space-y-0.5">
+                          <p>
+                            Relation: <span className="font-medium text-gray-700">{item.Relation || "N/A"}</span> | Gender: <span className="font-medium text-gray-700">{item.Gender || "N/A"}</span> | Aadhaar: <span className="font-medium text-gray-700">{item.Aadhaar || "N/A"}</span>
+                          </p>
+                          {item.Mobile && (
+                            <p>Mobile: <span className="font-medium text-gray-700">{item.Mobile}</span></p>
+                          )}
+                          {Number(item.pendingAmount || 0) > 0 && (
+                            <p className="text-red-500 font-semibold mt-1">
+                              Pending Amount / Fine: ₹{Number(item.pendingAmount).toLocaleString("en-IN")}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        item.createdAt && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {new Date(item.createdAt).toLocaleDateString("en-IN")}
+                          </p>
+                        )
                       )}
                     </div>
-                    <button
-                      onClick={() => handleDeleteItem(activeModule, item.id)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleOpenEditForm(activeModule, item)}
+                        className="p-2 text-gray-400 hover:text-[#31757A] hover:bg-gray-50 rounded-lg transition-colors"
+                        title="Edit Item"
+                      >
+                        <PencilIcon className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteItem(activeModule, item.id)}
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete Item"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -716,7 +776,7 @@ const JamatDashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* ── Add Item Modal ────────────────────────────────────────────────── */}
+      {/* ── Add/Edit Item Modal ────────────────────────────────────────────────── */}
       <AnimatePresence>
         {showAddForm && activeModule && (
           <>
@@ -727,17 +787,19 @@ const JamatDashboard = () => {
               onClick={() => setShowAddForm(false)}
               className="fixed inset-0 bg-black/40 z-50"
             />
-            <motion.div
+             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 sm:inset-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-md bg-white rounded-2xl shadow-2xl z-50 overflow-hidden"
+              className={`fixed inset-x-4 top-6 md:top-12 sm:left-1/2 sm:-translate-x-1/2 sm:w-full bg-white rounded-2xl shadow-2xl z-50 overflow-hidden ${
+                activeModule === "members" ? "sm:max-w-4xl" : "sm:max-w-md"
+              }`}
             >
               {/* Modal header */}
               <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <h3 className="text-base font-bold text-gray-900">
-                  Add to{" "}
+                  {editingItemId ? "Edit" : "Add to"}{" "}
                   <span className="capitalize">
                     {MODULE_META[activeModule]?.label || activeModule}
                   </span>
@@ -751,8 +813,414 @@ const JamatDashboard = () => {
               </div>
 
               {/* Form body */}
-              <div className="px-6 py-4 space-y-4 max-h-[60vh] overflow-y-auto">
-                {(schemas[activeModule]?.fields ?? []).length > 0 ? (
+              <div className="px-6 py-4 space-y-4 max-h-[65vh] overflow-y-auto">
+                {activeModule === "members" ? (
+                  <div className="space-y-6">
+                    {/* Personal Details */}
+                    <div>
+                      <div className="bg-[#1E3E37] text-white px-4 py-2 font-semibold text-sm rounded-lg mb-4">
+                        Personal Details
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Full Name */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Full Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Enter full name"
+                            value={addFormData.Fname ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Fname: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                            required
+                          />
+                        </div>
+
+                        {/* Date of Birth */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Date of Birth <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="date"
+                            value={addFormData.Dob ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Dob: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                            required
+                          />
+                        </div>
+
+                        {/* Gender */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Gender <span className="text-red-500">*</span>
+                          </label>
+                          <div className="flex gap-4 pt-2">
+                            {["Male", "Female", "Other"].map((g) => (
+                              <label key={g} className="flex items-center text-sm cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="Gender"
+                                  value={g}
+                                  checked={addFormData.Gender === g}
+                                  onChange={(e) => setAddFormData(p => ({ ...p, Gender: e.target.value }))}
+                                  className="mr-1.5 accent-[#31757A]"
+                                />
+                                {g}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Relationship */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Relationship
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Head, Spouse, Son"
+                            value={addFormData.Relation ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Relation: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                          />
+                        </div>
+
+                        {/* Marital Status */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Marital Status
+                          </label>
+                          <select
+                            value={addFormData.Mstatus ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Mstatus: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30 bg-white"
+                          >
+                            <option value="">Select Status</option>
+                            <option value="Single">Single</option>
+                            <option value="Married">Married</option>
+                            <option value="Widow">Widow</option>
+                            <option value="Widower">Widower</option>
+                          </select>
+                        </div>
+
+                        {/* Occupation */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Occupation
+                          </label>
+                          <select
+                            value={addFormData.Occupation ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Occupation: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30 bg-white"
+                          >
+                            <option value="">Select Occupation</option>
+                            <option value="Student">Student</option>
+                            <option value="PVT Employee">PVT Employee</option>
+                            <option value="Govt Employee">Govt Employee</option>
+                            <option value="Abroad">Abroad</option>
+                            <option value="Self Employee">Self Employee</option>
+                            <option value="House Wife">House Wife</option>
+                            <option value="Business">Business</option>
+                            <option value="Masjid Emam / Madrassa Teacher">Masjid Emam / Madrassa Teacher</option>
+                            <option value="PVT/Govt Pensioner">PVT/Govt Pensioner</option>
+                            <option value="Other">Other</option>
+                            <option value="Nill">Nill</option>
+                          </select>
+                        </div>
+
+                        {/* Designation/Department */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Designation/Department
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="If applicable"
+                            value={addFormData.Designation ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Designation: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                          />
+                        </div>
+
+                        {/* Ration Card */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Ration Card
+                          </label>
+                          <select
+                            value={addFormData.RC ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, RC: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30 bg-white"
+                          >
+                            <option value="">Select Card Type</option>
+                            <option value="White">White</option>
+                            <option value="Blue">Blue</option>
+                            <option value="Pink">Pink</option>
+                            <option value="Yellow">Yellow</option>
+                          </select>
+                        </div>
+
+                        {/* Education */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Education
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g., SSLC, Plus Two, Degree"
+                            value={addFormData.Education ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Education: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                          />
+                        </div>
+
+                        {/* Madrassa Education */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Madrassa Education
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="If applicable"
+                            value={addFormData.Madrassa ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Madrassa: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                          />
+                        </div>
+
+                        {/* Aadhaar */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Aadhaar Number <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={12}
+                            placeholder="12-digit Aadhaar"
+                            value={addFormData.Aadhaar ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Aadhaar: e.target.value.replace(/\D/g, "") }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                            required
+                          />
+                        </div>
+
+                        {/* Mobile Number */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Mobile Number
+                          </label>
+                          <input
+                            type="text"
+                            maxLength={10}
+                            placeholder="10-digit mobile"
+                            value={addFormData.Mobile ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Mobile: e.target.value.replace(/\D/g, "") }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                          />
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Email
+                          </label>
+                          <input
+                            type="email"
+                            placeholder="email@example.com"
+                            value={addFormData.Email ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Email: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                          />
+                        </div>
+
+                        {/* Health Status */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Health Status
+                          </label>
+                          <select
+                            value={addFormData.Health ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Health: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30 bg-white"
+                          >
+                            <option value="">Select Health Status</option>
+                            <option value="Not Required">Not Required</option>
+                            <option value="Accident - Very Serious">Accident - Very Serious</option>
+                            <option value="Cancer">Cancer</option>
+                            <option value="Heart Treatment">Heart Treatment</option>
+                            <option value="Kidney Disease">Kidney Disease</option>
+                            <option value="Brain and Nervous System">Brain and Nervous System</option>
+                            <option value="Others - Very Serious">Others - Very Serious</option>
+                          </select>
+                        </div>
+
+                        {/* Member Since */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Member Since
+                          </label>
+                          <input
+                            type="date"
+                            value={addFormData.Myear ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Myear: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Residence Details */}
+                    <div>
+                      <div className="bg-[#1E3E37] text-white px-4 py-2 font-semibold text-sm rounded-lg mb-4">
+                        Residence Details
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {/* Panchayath Name */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Panchayath Name
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Enter Panchayath Name"
+                            value={addFormData.Pward ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Pward: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                          />
+                        </div>
+
+                        {/* Panchayath Ward/House No */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Panchayath Ward/House No
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Enter Ward/House No"
+                            value={addFormData.Phouse ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Phouse: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                          />
+                        </div>
+
+                        {/* District */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            District
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Ernakulam"
+                            value={addFormData.Dist ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Dist: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                          />
+                        </div>
+
+                        {/* Area Type */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Area Type
+                          </label>
+                          <div className="flex gap-4 pt-2">
+                            {["Corporation", "Municipality", "Panchayath"].map((a) => (
+                              <label key={a} className="flex items-center text-sm cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="Area"
+                                  value={a}
+                                  checked={addFormData.Area === a}
+                                  onChange={(e) => setAddFormData(p => ({ ...p, Area: e.target.value }))}
+                                  className="mr-1.5 accent-[#31757A]"
+                                />
+                                {a}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Land Ownership */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Land Ownership
+                          </label>
+                          <select
+                            value={addFormData.Land ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Land: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30 bg-white"
+                          >
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                          </select>
+                        </div>
+
+                        {/* House Ownership */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            House Ownership
+                          </label>
+                          <select
+                            value={addFormData.House ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, House: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30 bg-white"
+                          >
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                          </select>
+                        </div>
+
+                        {/* Place of Residence */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Place of Residence
+                          </label>
+                          <select
+                            value={addFormData.Resident ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, Resident: e.target.value }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30 bg-white"
+                          >
+                            <option value="">Select</option>
+                            <option value="Own">Own</option>
+                            <option value="Rent">Rent</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+
+                        {/* Pending Amount / Fine */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">
+                            Pending Amount / Fine (₹)
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="Enter pending amount or fine"
+                            value={addFormData.pendingAmount ?? ""}
+                            onChange={(e) => setAddFormData(p => ({ ...p, pendingAmount: Number(e.target.value) }))}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Full Address */}
+                      <div className="mt-4">
+                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                          Full Address
+                        </label>
+                        <textarea
+                          rows={3}
+                          placeholder="Complete address with pincode"
+                          value={addFormData.Address ?? ""}
+                          onChange={(e) => setAddFormData(p => ({ ...p, Address: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#31757A]/30 resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (schemas[activeModule]?.fields ?? []).length > 0 ? (
                   // Dynamic schema-based form
                   schemas[activeModule].fields.map((field) => (
                     <div key={field.name}>
@@ -928,7 +1396,7 @@ const JamatDashboard = () => {
                     background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})`,
                   }}
                 >
-                  {addingItem ? "Adding…" : getAddLabel(activeModule)}
+                  {addingItem ? "Saving…" : (editingItemId ? "Save Changes" : getAddLabel(activeModule))}
                 </button>
               </div>
             </motion.div>
