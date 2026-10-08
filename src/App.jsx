@@ -101,6 +101,35 @@ import AdminProfilePage from "./pages/admin/AdminProfilePage";
 // Public Pages (additional)
 import ReceiptPage from "./pages/public/ReceiptPage";
 
+const MAINTENANCE_MODE = true;
+
+const MaintenancePage = () => (
+  <div className="min-h-screen bg-[#f7faf9] flex items-center justify-center px-4 py-10">
+    <main className="w-full max-w-3xl text-center">
+      <div className="rounded-lg border border-[#d8e7e5] bg-white px-5 py-10 shadow-sm sm:px-8 sm:py-14">
+        <p className="text-2xl font-semibold leading-relaxed text-[#1F2E2E] sm:text-3xl">
+          പേയ്മെന്റ് എത്രയും വേഗം അടച്ചു തീർക്കുക.
+        </p>
+        <p className="mt-6 text-xl font-medium leading-relaxed text-[#2f4b4b] sm:text-2xl">
+          Due to pending payment, the website is currently down.
+        </p>
+        <p className="mt-8 text-lg font-bold tracking-wide text-[#31757A] sm:text-xl">
+          CONTACT : +91 88911 77845
+        </p>
+      </div>
+    </main>
+  </div>
+);
+
+const MaintenanceModeApp = () => (
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<MaintenancePage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  </BrowserRouter>
+);
+
 // 404 Page
 const NotFoundPage = () => (
   <div className="min-h-screen flex items-center justify-center bg-neutral-50">
@@ -117,7 +146,7 @@ const NotFoundPage = () => (
   </div>
 );
 
-function App() {
+function NormalApp() {
   const { initAuth, isAuthenticated, isAdmin, _hydrated, logout } =
     useAuthStore();
   const inactivityTimerRef = useRef(null);
@@ -468,6 +497,10 @@ function App() {
       </UserPortalAuthProvider>
     </BrowserRouter>
   );
+}
+
+function App() {
+  return MAINTENANCE_MODE ? <MaintenanceModeApp /> : <NormalApp />;
 }
 
 export default App;
